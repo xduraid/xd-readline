@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -57,9 +58,14 @@ static void xd_input_handler(char chr);
 // ========================
 
 /**
- * @brief Store the tty attributes when `xd_readline()` was called.
+ * @brief The original tty attributes before `xd_readline()` was called.
  */
 static struct termios xd_original_tty_attributes;
+
+/**
+ * @brief The terminal current window width.
+ */
+static int xd_tty_win_width = 0;
 
 /**
  * @brief The input buffer.
@@ -108,6 +114,14 @@ static void xd_readline_init() {
   }
   xd_input_length = 0;
   xd_input_buffer[0] = XD_ASCII_NUL;
+
+  // get terminal window width
+  struct winsize wsz;
+  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsz) == -1) {
+    fprintf(stderr, "xd_readline: failed to get tty window width\n");
+    exit(EXIT_FAILURE);
+  }
+  xd_tty_win_width = wsz.ws_col;
 }  // xd_readline_init()
 
 /**
