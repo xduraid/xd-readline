@@ -18,6 +18,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,8 +30,19 @@
 // Macros and Constants
 // ========================
 
+/**
+ * @brief Size of a small buffer to be used for formatting ANSI sequences.
+ */
+#define XD_SMALL_BUFFER_SIZE (32)
+
+// ASCII chars
+
 #define XD_ASCII_NUL (0)   // ASCII for `NUL`
 #define XD_ASCII_LF  (10)  // ASCII for `LF` (`Enter`)
+
+// ANSI sequences' formats
+
+#define XD_ANSI_CRSR_SET_COL "\033[%dG"  // ANSI for setting cursor column
 
 // ========================
 // Typedefs
@@ -45,6 +57,10 @@ static void xd_readline_destroy() __attribute__((destructor));
 
 static void xd_tty_raw();
 static void xd_tty_restore();
+
+static void xd_tty_write_ansii_sequence(const char *format, ...);
+static void xd_tty_write(const void *data, int length);
+static void xd_tty_write_track(const void *data, int length);
 
 static void xd_input_handle_printable(char chr);
 
@@ -66,6 +82,24 @@ static struct termios xd_original_tty_attributes;
  * @brief The terminal current window width.
  */
 static int xd_tty_win_width = 0;
+
+/**
+ * @brief The terminal cursor row position (1-based) relative to the beginning
+ * of the prompt.
+ */
+static int xd_tty_cursor_row = 1;
+
+/**
+ * @brief The terminal cursor column position (1-based) relative to the
+ * beginning of the prompt.
+ */
+static int xd_tty_cursor_col = 1;
+
+/**
+ * @brief The number of characters currently displayed in the terminal (prompt +
+ * input).
+ */
+static int xd_tty_chars_count = 0;
 
 /**
  * @brief The input buffer.
@@ -181,6 +215,73 @@ static void xd_tty_restore() {
 }  // xd_tty_restore()
 
 /**
+ * @brief Writes a formatted ANSI escape sequence to the terminal.
+ *
+ * @param format The format string of the ANSI sequence.
+ * @param ... Variable arguments to substitute into the format string.
+ */
+static void xd_tty_write_ansii_sequence(const char *format, ...) {
+  char buffer[XD_SMALL_BUFFER_SIZE] = {0};
+  va_list args;
+  va_start(args, format);
+  int length = vsnprintf(buffer, XD_SMALL_BUFFER_SIZE, format, args);
+  va_end(args);
+  if (write(STDOUT_FILENO, buffer, length) == -1) {
+    xd_tty_restore();
+    fprintf(stderr, "xd_readline: failed to write to tty: %s\n",
+            strerror(errno));
+    exit(EXIT_FAILURE);
+  }
+}  // xd_tty_write_ansii_sequence()
+
+/**
+ * @brief Wrapper for `write()` used to write data to `stdout`.
+ *
+ * @param data Pointer to the data to be written.
+ * @param length The number of bytes to be written.
+ */
+static void xd_tty_write(const void *data, int length) {
+  if (length <= 0) {
+    return;
+  }
+  if (write(STDOUT_FILENO, data, length) == -1) {
+    xd_tty_restore();
+    fprintf(stderr, "xd_readline: failed to write to tty: %s\n",
+            strerror(errno));
+    exit(EXIT_FAILURE);
+  }
+}  // xd_tty_write()
+
+/**
+ * @brief Wrapper for `write()` used to write data to `stdout` while keeping
+ * track of the number of chars written and the row and column positions of the
+ * cursor and updating the cursor position manually.
+ *
+ * @param data Pointer to the data to be written.
+ * @param length The number of bytes to be written.
+ */
+static void xd_tty_write_track(const void *data, int length) {
+  if (length <= 0) {
+    return;
+  }
+
+  xd_tty_write(data, length);
+  xd_tty_chars_count += length;
+
+  // update cursor position
+  int cursor_flat_pos = ((xd_tty_cursor_row - 1) * xd_tty_win_width) +
+                        xd_tty_cursor_col + length - 1;
+  xd_tty_cursor_row = (cursor_flat_pos / xd_tty_win_width) + 1;
+  xd_tty_cursor_col = (cursor_flat_pos % xd_tty_win_width) + 1;
+  if (xd_tty_cursor_col == 1) {
+    // make the terminal wrap to new line
+    char chr = ' ';
+    xd_tty_write(&chr, 1);
+  }
+  xd_tty_write_ansii_sequence(XD_ANSI_CRSR_SET_COL, xd_tty_cursor_col);
+}  // xd_tty_write_track()
+
+/**
  * @brief Handles the case where the input is a printable character.
  *
  * @param chr the input character.
@@ -188,7 +289,7 @@ static void xd_tty_restore() {
 static void xd_input_handle_printable(char chr) {
   xd_input_buffer[xd_input_length++] = chr;
   xd_input_buffer[xd_input_length] = XD_ASCII_NUL;
-  write(STDOUT_FILENO, &chr, 1);
+  xd_tty_write_track(&chr, 1);
 }  // xd_input_handle_printable
 
 /**
@@ -200,7 +301,7 @@ static void xd_input_handle_enter(char chr) {
   xd_input_buffer[xd_input_length++] = XD_ASCII_LF;
   xd_input_buffer[xd_input_length] = XD_ASCII_NUL;
   xd_readline_finished = 1;
-  write(STDOUT_FILENO, &chr, 1);
+  xd_tty_write(&chr, 1);
 }  // xd_input_handle_enter()
 
 /**
@@ -242,11 +343,15 @@ char *xd_readline() {
   xd_readline_return = xd_input_buffer;
   xd_readline_finished = 0;
 
+  xd_tty_cursor_row = 1;
+  xd_tty_cursor_col = 1;
+  xd_tty_chars_count = 0;
+
   xd_tty_raw();
 
   if (xd_readline_prompt != NULL) {
     xd_readline_prompt_length = (int)strlen(xd_readline_prompt);
-    write(STDOUT_FILENO, xd_readline_prompt, xd_readline_prompt_length);
+    xd_tty_write_track(xd_readline_prompt, xd_readline_prompt_length);
   }
 
   char chr;
@@ -265,7 +370,7 @@ char *xd_readline() {
       xd_readline_finished = 1;
       xd_readline_return = NULL;
       chr = XD_ASCII_LF;
-      write(STDOUT_FILENO, &chr, 1);
+      xd_tty_write(&chr, 1);
       continue;
     }
 
