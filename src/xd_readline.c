@@ -105,6 +105,12 @@ static char *xd_readline_return = NULL;
  * library.
  */
 static void xd_readline_init() {
+  if (!isatty(STDIN_FILENO) || !isatty(STDOUT_FILENO)) {
+    fprintf(stderr, "xd_readline only works with a tty IO\n");
+    fprintf(stderr, "exiting...\n");
+    exit(EXIT_FAILURE);
+  }
+
   // initialize input buffer
   xd_input_buffer = (char *)malloc(sizeof(char) * xd_input_capacity);
   if (xd_input_buffer == NULL) {
