@@ -15,6 +15,7 @@
 
 #include "xd_readline.h"
 
+#include <ctype.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
@@ -27,7 +28,8 @@
 // Macros and Constants
 // ========================
 
-#define XD_ASCII_NUL (0)  // ASCII for `NUL`
+#define XD_ASCII_NUL (0)   // ASCII for `NUL`
+#define XD_ASCII_LF  (10)  // ASCII for `LF` (`Enter`)
 
 // ========================
 // Typedefs
@@ -42,6 +44,13 @@ static void xd_readline_destroy() __attribute__((destructor));
 
 static void xd_tty_raw();
 static void xd_tty_restore();
+
+static void xd_input_handle_printable(char chr);
+
+static void xd_input_handle_enter(char chr);
+static void xd_input_handle_control(char chr);
+
+static void xd_input_handler(char chr);
 
 // ========================
 // Variables
@@ -66,6 +75,16 @@ static int xd_input_capacity = LINE_MAX;
  * @brief The current length of the input buffer.
  */
 static int xd_input_length = 0;
+
+/**
+ * @brief Indicates whether readline finished (non-zero) or not (zero).
+ */
+static int xd_readline_finished = 0;
+
+/**
+ * @brief The pointer to be returned when `xd_readline()` finishes.
+ */
+static char *xd_readline_return = NULL;
 
 // ========================
 // Public Variables
@@ -134,6 +153,58 @@ static void xd_tty_restore() {
   }
 }  // xd_tty_restore()
 
+/**
+ * @brief Handles the case where the input is a printable character.
+ *
+ * @param chr the input character.
+ */
+static void xd_input_handle_printable(char chr) {
+  xd_input_buffer[xd_input_length++] = chr;
+  xd_input_buffer[xd_input_length] = XD_ASCII_NUL;
+  write(STDOUT_FILENO, &chr, 1);
+}  // xd_input_handle_printable
+
+/**
+ * @brief Handles the case where the input is the `Enter` key.
+ *
+ * @param chr the input character.
+ */
+static void xd_input_handle_enter(char chr) {
+  xd_input_buffer[xd_input_length++] = XD_ASCII_LF;
+  xd_input_buffer[xd_input_length] = XD_ASCII_NUL;
+  xd_readline_finished = 1;
+  write(STDOUT_FILENO, &chr, 1);
+}  // xd_input_handle_enter()
+
+/**
+ * @brief Handles the case where the input is a control character.
+ *
+ * @param chr The input character.
+ */
+static void xd_input_handle_control(char chr) {
+  switch (chr) {
+    case XD_ASCII_LF:
+      xd_input_handle_enter(chr);
+      break;
+    default:
+      break;
+  }
+}  // xd_input_handle_control()
+
+/**
+ * @brief Handles a signle input character.
+ *
+ * @param chr The input character.
+ */
+static void xd_input_handler(char chr) {
+  if (isprint(chr)) {
+    xd_input_handle_printable(chr);
+  }
+  else if (iscntrl(chr)) {
+    xd_input_handle_control(chr);
+  }
+}  // xd_input_handler
+
 // ========================
 // Public Functions
 // ========================
@@ -141,9 +212,34 @@ static void xd_tty_restore() {
 char *xd_readline() {
   xd_input_length = 0;
   xd_input_buffer[0] = XD_ASCII_NUL;
+  xd_readline_return = xd_input_buffer;
+  xd_readline_finished = 0;
 
   xd_tty_raw();
-  // READ
+
+  char chr;
+  while (!xd_readline_finished) {
+    // read one character
+    ssize_t ret = read(STDIN_FILENO, &chr, 1);
+    if (ret == -1) {
+      xd_tty_restore();
+      fprintf(stderr, "xd_readline: failed to read from tty: %s\n",
+              strerror(errno));
+      exit(EXIT_FAILURE);
+    }
+
+    // EOF - input stream closed
+    if (ret == 0) {
+      xd_readline_finished = 1;
+      xd_readline_return = NULL;
+      chr = XD_ASCII_LF;
+      write(STDOUT_FILENO, &chr, 1);
+      continue;
+    }
+
+    xd_input_handler(chr);
+  }
+
   xd_tty_restore();
-  return NULL;
+  return xd_readline_return;
 }  // xd_readline()

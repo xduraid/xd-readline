@@ -15,12 +15,17 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "xd_readline.h"
 
 int main() {
-  if (xd_readline() == NULL) {
-    puts("Hello World");
+  char *line = NULL;
+  while ((line = xd_readline()) != NULL) {
+    printf("Read: %s---------------------\n", line);
+    if (strcmp(line, "exit\n") == 0) {
+      break;
+    }
   }
   exit(EXIT_SUCCESS);
 }  // main()
