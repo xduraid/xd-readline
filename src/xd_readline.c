@@ -15,14 +15,19 @@
 
 #include "xd_readline.h"
 
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <termios.h>
 #include <unistd.h>
 
 // ========================
 // Macros and Constants
 // ========================
+
+#define XD_ASCII_NUL (0)  // ASCII for `NUL`
 
 // ========================
 // Typedefs
@@ -31,6 +36,9 @@
 // ========================
 // Function Declarations
 // ========================
+
+static void xd_readline_init() __attribute__((constructor));
+static void xd_readline_destroy() __attribute__((destructor));
 
 static void xd_tty_raw();
 static void xd_tty_restore();
@@ -44,6 +52,21 @@ static void xd_tty_restore();
  */
 static struct termios xd_original_tty_attributes;
 
+/**
+ * @brief The input buffer.
+ */
+static char *xd_input_buffer = NULL;
+
+/**
+ * @brief The current capacity (max-length) of the input buffer.
+ */
+static int xd_input_capacity = LINE_MAX;
+
+/**
+ * @brief The current length of the input buffer.
+ */
+static int xd_input_length = 0;
+
 // ========================
 // Public Variables
 // ========================
@@ -51,6 +74,30 @@ static struct termios xd_original_tty_attributes;
 // ========================
 // Function Definitions
 // ========================
+
+/**
+ * @brief Constructor, runs before main to initialize the `xd-readline`
+ * library.
+ */
+static void xd_readline_init() {
+  // initialize input buffer
+  xd_input_buffer = (char *)malloc(sizeof(char) * xd_input_capacity);
+  if (xd_input_buffer == NULL) {
+    fprintf(stderr, "xd_readline: failed to allocate memory: %s\n",
+            strerror(errno));
+    exit(EXIT_FAILURE);
+  }
+  xd_input_length = 0;
+  xd_input_buffer[0] = XD_ASCII_NUL;
+}  // xd_readline_init()
+
+/**
+ * @brief Destructor, runs before exit to cleanup after the `xd-readline`
+ * library.
+ */
+static void xd_readline_destroy() {
+  free(xd_input_buffer);
+}  // xd_readline_destroy()
 
 /**
  * @brief Changes the terminal input settings to raw.
@@ -92,6 +139,9 @@ static void xd_tty_restore() {
 // ========================
 
 char *xd_readline() {
+  xd_input_length = 0;
+  xd_input_buffer[0] = XD_ASCII_NUL;
+
   xd_tty_raw();
   // READ
   xd_tty_restore();
