@@ -38,11 +38,15 @@
 // ASCII chars
 
 #define XD_ASCII_NUL (0)   // ASCII for `NUL`
+#define XD_ASCII_STX (2)   // ASCII for `STX` (`Ctrl+B`)
+#define XD_ASCII_ACK (6)   // ASCII for `ACK` (`Ctrl+F`)
 #define XD_ASCII_LF  (10)  // ASCII for `LF` (`Enter`)
 
 // ANSI sequences' formats
 
 #define XD_ANSI_CRSR_SET_COL "\033[%dG"  // ANSI for setting cursor column
+#define XD_ANSI_CRSR_MV_UP   "\033[%dA"  // ANSI for moving cursor up
+#define XD_ANSI_CRSR_MV_DN   "\033[%dB"  // ANSI for moving cursor down
 
 // ========================
 // Typedefs
@@ -62,7 +66,13 @@ static void xd_tty_write_ansii_sequence(const char *format, ...);
 static void xd_tty_write(const void *data, int length);
 static void xd_tty_write_track(const void *data, int length);
 
+static void xd_tty_cursor_move_left_wrap(int n);
+static void xd_tty_cursor_move_right_wrap(int n);
+
 static void xd_input_handle_printable(char chr);
+
+static void xd_input_handle_ctrl_b();
+static void xd_input_handle_ctrl_f();
 
 static void xd_input_handle_enter(char chr);
 static void xd_input_handle_control(char chr);
@@ -115,6 +125,11 @@ static int xd_input_capacity = LINE_MAX;
  * @brief The current length of the input buffer.
  */
 static int xd_input_length = 0;
+
+/**
+ * @brief The logical position of the cursor within the input buffer.
+ */
+static int xd_input_cursor = 0;
 
 /**
  * @brief Indicates whether readline finished (non-zero) or not (zero).
@@ -282,6 +297,52 @@ static void xd_tty_write_track(const void *data, int length) {
 }  // xd_tty_write_track()
 
 /**
+ * @brief Moves the terminal cursor left by a specified number of columns,
+ * wrapping across rows as needed.
+ *
+ * @param n The number of columns to move the cursor to the left.
+ */
+static inline void xd_tty_cursor_move_left_wrap(int n) {
+  if (n == 0) {
+    return;
+  }
+  int cursor_flat_pos =
+      ((xd_tty_cursor_row - 1) * xd_tty_win_width) + xd_tty_cursor_col - n - 1;
+  int new_cursor_row = (cursor_flat_pos / xd_tty_win_width) + 1;
+  int new_cursor_col = (cursor_flat_pos % xd_tty_win_width) + 1;
+  if (new_cursor_row != xd_tty_cursor_row) {
+    xd_tty_write_ansii_sequence(XD_ANSI_CRSR_MV_UP,
+                                xd_tty_cursor_row - new_cursor_row);
+    xd_tty_cursor_row = new_cursor_row;
+  }
+  xd_tty_write_ansii_sequence(XD_ANSI_CRSR_SET_COL, new_cursor_col);
+  xd_tty_cursor_col = new_cursor_col;
+}  // xd_tty_cursor_move_left_wrap()
+
+/**
+ * @brief Moves the terminal cursor right by a specified number of columns,
+ * wrapping across rows as needed.
+ *
+ * @param n The number of columns to move the cursor to the right.
+ */
+static inline void xd_tty_cursor_move_right_wrap(int n) {
+  if (n == 0) {
+    return;
+  }
+  int cursor_flat_pos =
+      ((xd_tty_cursor_row - 1) * xd_tty_win_width) + xd_tty_cursor_col + n - 1;
+  int new_cursor_row = (cursor_flat_pos / xd_tty_win_width) + 1;
+  int new_cursor_col = (cursor_flat_pos % xd_tty_win_width) + 1;
+  if (new_cursor_row != xd_tty_cursor_row) {
+    xd_tty_write_ansii_sequence(XD_ANSI_CRSR_MV_DN,
+                                new_cursor_row - xd_tty_cursor_row);
+    xd_tty_cursor_row = new_cursor_row;
+  }
+  xd_tty_write_ansii_sequence(XD_ANSI_CRSR_SET_COL, new_cursor_col);
+  xd_tty_cursor_col = new_cursor_col;
+}  // xd_tty_cursor_move_right_wrap()
+
+/**
  * @brief Handles the case where the input is a printable character.
  *
  * @param chr the input character.
@@ -290,7 +351,34 @@ static void xd_input_handle_printable(char chr) {
   xd_input_buffer[xd_input_length++] = chr;
   xd_input_buffer[xd_input_length] = XD_ASCII_NUL;
   xd_tty_write_track(&chr, 1);
+  xd_input_cursor++;
 }  // xd_input_handle_printable
+
+/**
+ * @brief Handles the case where the input is `Ctrl+B`.
+ *
+ * @param chr the input character.
+ */
+static void xd_input_handle_ctrl_b() {
+  if (xd_input_cursor == 0) {
+    return;
+  }
+  xd_tty_cursor_move_left_wrap(1);
+  xd_input_cursor--;
+}  // xd_input_handle_ctrl_b()
+
+/**
+ * @brief Handles the case where the input is `Ctrl+F` key.
+ *
+ * @param chr the input character.
+ */
+static void xd_input_handle_ctrl_f() {
+  if (xd_input_cursor == xd_input_length) {
+    return;
+  }
+  xd_tty_cursor_move_right_wrap(1);
+  xd_input_cursor++;
+}  // xd_input_handle_ctrl_f()
 
 /**
  * @brief Handles the case where the input is the `Enter` key.
@@ -311,6 +399,12 @@ static void xd_input_handle_enter(char chr) {
  */
 static void xd_input_handle_control(char chr) {
   switch (chr) {
+    case XD_ASCII_STX:
+      xd_input_handle_ctrl_b();
+      break;
+    case XD_ASCII_ACK:
+      xd_input_handle_ctrl_f();
+      break;
     case XD_ASCII_LF:
       xd_input_handle_enter(chr);
       break;
@@ -338,6 +432,7 @@ static void xd_input_handler(char chr) {
 // ========================
 
 char *xd_readline() {
+  xd_input_cursor = 0;
   xd_input_length = 0;
   xd_input_buffer[0] = XD_ASCII_NUL;
   xd_readline_return = xd_input_buffer;
