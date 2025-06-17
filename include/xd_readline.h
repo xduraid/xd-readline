@@ -17,6 +17,14 @@
 #define XD_READLINE_H
 
 /**
+ * @brief Prompt string displayed at the beginning of each input line.
+ *
+ * Used to change the prompt displayed by `xd_readline()` before reading input.
+ * If not set or `NULL`, no prompt will be displayed.
+ */
+extern const char *xd_readline_prompt;
+
+/**
  * @brief Reads a line from standard input with custom editing and keyboard
  * functionalities.
  *

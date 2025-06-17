@@ -20,6 +20,7 @@
 #include "xd_readline.h"
 
 int main() {
+  xd_readline_prompt = "xd-rl> ";
   char *line = NULL;
   while ((line = xd_readline()) != NULL) {
     printf("Read: %s---------------------\n", line);

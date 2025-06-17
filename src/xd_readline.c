@@ -92,9 +92,16 @@ static int xd_readline_finished = 0;
  */
 static char *xd_readline_return = NULL;
 
+/**
+ * @brief The length of the input prompt string.
+ */
+static int xd_readline_prompt_length = 0;
+
 // ========================
 // Public Variables
 // ========================
+
+const char *xd_readline_prompt = NULL;
 
 // ========================
 // Function Definitions
@@ -236,6 +243,11 @@ char *xd_readline() {
   xd_readline_finished = 0;
 
   xd_tty_raw();
+
+  if (xd_readline_prompt != NULL) {
+    xd_readline_prompt_length = (int)strlen(xd_readline_prompt);
+    write(STDOUT_FILENO, xd_readline_prompt, xd_readline_prompt_length);
+  }
 
   char chr;
   while (!xd_readline_finished) {
