@@ -446,8 +446,6 @@ static void xd_input_handle_ctrl_b() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+F` key.
- *
- * @param chr the input character.
  */
 static void xd_input_handle_ctrl_f() {
   if (xd_input_cursor == xd_input_length) {
@@ -459,8 +457,6 @@ static void xd_input_handle_ctrl_f() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+H`.
- *
- * @param chr the input character.
  */
 static void xd_input_handle_ctrl_h() {
   if (xd_input_cursor == 0) {
@@ -472,8 +468,6 @@ static void xd_input_handle_ctrl_h() {
 
 /**
  * @brief Handles the case where the input is the`Backspace` key.
- *
- * @param chr the input character.
  */
 static void xd_input_handle_backspace() {
   xd_input_handle_ctrl_h();
