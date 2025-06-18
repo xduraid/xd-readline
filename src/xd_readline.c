@@ -15,6 +15,8 @@
 
 #include "xd_readline.h"
 
+#include <asm-generic/ioctls.h>
+#include <bits/posix2_lim.h>
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
@@ -505,7 +507,7 @@ static void xd_input_handle_control(char chr) {
       xd_input_handle_enter(chr);
       break;
     case XD_ASCII_DEL:
-      xd_input_handle_backspace(chr);
+      xd_input_handle_backspace();
       break;
     default:
       break;
