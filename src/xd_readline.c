@@ -48,6 +48,7 @@
 #define XD_ASCII_BEL (7)    // ASCII for `BEL` (`Ctrl+G`)
 #define XD_ASCII_BS  (8)    // ASCII for `BS` (`Ctrl+H`)
 #define XD_ASCII_LF  (10)   // ASCII for `LF` (`Enter`)
+#define XD_ASCII_VT  (11)   // ASCII for `VT` (`Ctrl+K`)
 #define XD_ASCII_FF  (12)   // ASCII for `FF` (`Ctrl+L`)
 #define XD_ASCII_DEL (127)  // ASCII for `DEL` (`Backspace`)
 
@@ -99,6 +100,7 @@ static void xd_input_handle_ctrl_e();
 static void xd_input_handle_ctrl_f();
 static void xd_input_handle_ctrl_g();
 static void xd_input_handle_ctrl_h();
+static void xd_input_handle_ctrl_k();
 static void xd_input_handle_ctrl_l();
 
 static void xd_input_handle_backspace();
@@ -567,6 +569,18 @@ static void xd_input_handle_ctrl_h() {
 }  // xd_input_handle_ctrl_h()
 
 /**
+ * @brief Handles the case where the input is `Ctrl+K`.
+ */
+static void xd_input_handle_ctrl_k() {
+  if (xd_input_cursor == xd_input_length) {
+    xd_tty_bell();
+    return;
+  }
+  xd_input_buffer_remove_from_cursor(xd_input_length - xd_input_cursor);
+  xd_readline_redraw = 1;
+}  // xd_input_handle_ctrl_k()
+
+/**
  * @brief Handles the case where the input is `Ctrl+L`.
  */
 static void xd_input_handle_ctrl_l() {
@@ -624,6 +638,9 @@ static void xd_input_handle_control(char chr) {
       break;
     case XD_ASCII_LF:
       xd_input_handle_enter();
+      break;
+    case XD_ASCII_VT:
+      xd_input_handle_ctrl_k();
       break;
     case XD_ASCII_FF:
       xd_input_handle_ctrl_l();
