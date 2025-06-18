@@ -40,8 +40,10 @@
 // ASCII control characters
 
 #define XD_ASCII_NUL (0)    // ASCII for `NUL`
+#define XD_ASCII_SOH (1)    // ASCII for `SOH` (`Ctrl+A`)
 #define XD_ASCII_STX (2)    // ASCII for `STX` (`Ctrl+B`)
 #define XD_ASCII_EOT (4)    // ASCII for `EOT` (`Ctrl+D`)
+#define XD_ASCII_ENQ (5)    // ASCII for `ENQ` (`Ctrl+E`)
 #define XD_ASCII_ACK (6)    // ASCII for `ACK` (`Ctrl+F`)
 #define XD_ASCII_BS  (8)    // ASCII for `BS` (`Ctrl+H`)
 #define XD_ASCII_LF  (10)   // ASCII for `LF` (`Enter`)
@@ -83,8 +85,10 @@ static void xd_tty_cursor_move_right_wrap(int n);
 
 static void xd_input_handle_printable(char chr);
 
+static void xd_input_handle_ctrl_a();
 static void xd_input_handle_ctrl_b();
 static void xd_input_handle_ctrl_d();
+static void xd_input_handle_ctrl_e();
 static void xd_input_handle_ctrl_f();
 
 static void xd_input_handle_ctrl_h();
@@ -441,12 +445,21 @@ static inline void xd_tty_cursor_move_right_wrap(int n) {
 static void xd_input_handle_printable(char chr) {
   xd_input_buffer_insert(chr);
   xd_readline_redraw = 1;
-}  // xd_input_handle_printable
+}  // xd_input_handle_printable()
+
+/**
+ * @brief Handles the case where the input is `Ctrl+A`.
+ */
+static void xd_input_handle_ctrl_a() {
+  if (xd_input_cursor == 0) {
+    return;
+  }
+  xd_tty_cursor_move_left_wrap(xd_input_cursor);
+  xd_input_cursor = 0;
+}  // xd_input_handle_ctrl_a()
 
 /**
  * @brief Handles the case where the input is `Ctrl+B`.
- *
- * @param chr the input character.
  */
 static void xd_input_handle_ctrl_b() {
   if (xd_input_cursor == 0) {
@@ -456,6 +469,9 @@ static void xd_input_handle_ctrl_b() {
   xd_input_cursor--;
 }  // xd_input_handle_ctrl_b()
 
+/**
+ * @brief Handles the case where the input is `Ctrl+D`.
+ */
 static void xd_input_handle_ctrl_d() {
   if (xd_input_length == 0) {
     char chr = XD_ASCII_LF;
@@ -465,6 +481,17 @@ static void xd_input_handle_ctrl_d() {
     return;
   }
 }  // xd_input_handle_ctrl_d()
+
+/**
+ * @brief Handles the case where the input is `Ctrl+E`.
+ */
+static void xd_input_handle_ctrl_e() {
+  if (xd_input_cursor == xd_input_length) {
+    return;
+  }
+  xd_tty_cursor_move_right_wrap(xd_input_length - xd_input_cursor);
+  xd_input_cursor = xd_input_length;
+}  // xd_input_handle_ctrl_e()
 
 /**
  * @brief Handles the case where the input is `Ctrl+F` key.
@@ -512,11 +539,17 @@ static void xd_input_handle_enter() {
  */
 static void xd_input_handle_control(char chr) {
   switch (chr) {
+    case XD_ASCII_SOH:
+      xd_input_handle_ctrl_a();
+      break;
     case XD_ASCII_STX:
       xd_input_handle_ctrl_b();
       break;
     case XD_ASCII_EOT:
       xd_input_handle_ctrl_d();
+      break;
+    case XD_ASCII_ENQ:
+      xd_input_handle_ctrl_e();
       break;
     case XD_ASCII_ACK:
       xd_input_handle_ctrl_f();
