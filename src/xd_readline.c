@@ -69,6 +69,7 @@ static void xd_readline_destroy() __attribute__((destructor));
 
 static void xd_input_buffer_insert(char chr);
 static void xd_input_buffer_remove_before_cursor(int n);
+static void xd_input_buffer_remove_from_cursor(int n);
 
 static void xd_tty_raw();
 static void xd_tty_restore();
@@ -254,6 +255,24 @@ static void xd_input_buffer_remove_before_cursor(int n) {
   xd_input_cursor -= n;
   xd_input_length -= n;
 }  // xd_input_buffer_remove_before_cursor()
+
+/**
+ * @brief Removes a number of characters starting at the cursor position from
+ * the input buffer.
+ *
+ * @param n The number of characters to be removed
+ */
+static void xd_input_buffer_remove_from_cursor(int n) {
+  if (xd_input_length - xd_input_cursor < n) {
+    return;
+  }
+
+  // shift the characters after the ones being removed by n to the left
+  for (int i = xd_input_cursor; i < xd_input_length - n; i++) {
+    xd_input_buffer[i] = xd_input_buffer[i + n];
+  }
+  xd_input_length -= n;
+}  // xd_input_buffer_remove_from_cursor()
 
 /**
  * @brief Changes the terminal input settings to raw.
@@ -480,6 +499,11 @@ static void xd_input_handle_ctrl_d() {
     xd_readline_return = NULL;
     return;
   }
+  if (xd_input_cursor == xd_input_length) {
+    return;
+  }
+  xd_input_buffer_remove_from_cursor(1);
+  xd_readline_redraw = 1;
 }  // xd_input_handle_ctrl_d()
 
 /**
