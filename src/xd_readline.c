@@ -50,6 +50,7 @@
 #define XD_ASCII_LF  (10)   // ASCII for `LF` (`Enter`)
 #define XD_ASCII_VT  (11)   // ASCII for `VT` (`Ctrl+K`)
 #define XD_ASCII_FF  (12)   // ASCII for `FF` (`Ctrl+L`)
+#define XD_ASCII_NAK (21)   // ASCII for `NAK` (`Ctrl+U`)
 #define XD_ASCII_DEL (127)  // ASCII for `DEL` (`Backspace`)
 
 // ANSI sequences' formats
@@ -102,6 +103,7 @@ static void xd_input_handle_ctrl_g();
 static void xd_input_handle_ctrl_h();
 static void xd_input_handle_ctrl_k();
 static void xd_input_handle_ctrl_l();
+static void xd_input_handle_ctrl_u();
 
 static void xd_input_handle_backspace();
 
@@ -592,6 +594,18 @@ static void xd_input_handle_ctrl_l() {
 }  // xd_input_handle_ctrl_l()
 
 /**
+ * @brief Handles the case where the input is `Ctrl+L`.
+ */
+static void xd_input_handle_ctrl_u() {
+  if (xd_input_cursor == 0) {
+    xd_tty_bell();
+    return;
+  }
+  xd_input_buffer_remove_before_cursor(xd_input_cursor);
+  xd_readline_redraw = 1;
+}  // xd_input_handle_ctrl_u()
+
+/**
  * @brief Handles the case where the input is the`Backspace` key.
  */
 static void xd_input_handle_backspace() {
@@ -644,6 +658,9 @@ static void xd_input_handle_control(char chr) {
       break;
     case XD_ASCII_FF:
       xd_input_handle_ctrl_l();
+      break;
+    case XD_ASCII_NAK:
+      xd_input_handle_ctrl_u();
       break;
     case XD_ASCII_DEL:
       xd_input_handle_backspace();
