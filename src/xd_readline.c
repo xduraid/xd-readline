@@ -44,9 +44,10 @@
 
 // ANSI sequences' formats
 
-#define XD_ANSI_CRSR_SET_COL "\033[%dG"  // ANSI for setting cursor column
-#define XD_ANSI_CRSR_MV_UP   "\033[%dA"  // ANSI for moving cursor up
-#define XD_ANSI_CRSR_MV_DN   "\033[%dB"  // ANSI for moving cursor down
+#define XD_ANSI_CRSR_SET_COL "\033[%dG"   // ANSI for setting cursor column
+#define XD_ANSI_CRSR_MV_UP   "\033[%dA"   // ANSI for moving cursor up
+#define XD_ANSI_CRSR_MV_DN   "\033[%dB"   // ANSI for moving cursor down
+#define XD_ANSI_LINE_CLR     "\033[2K\r"  // ANSI for clearing current line
 
 // ========================
 // Typedefs
@@ -59,8 +60,13 @@
 static void xd_readline_init() __attribute__((constructor));
 static void xd_readline_destroy() __attribute__((destructor));
 
+static void xd_input_buffer_insert(char chr);
+
 static void xd_tty_raw();
 static void xd_tty_restore();
+
+static void xd_tty_input_clear();
+static void xd_tty_input_redraw();
 
 static void xd_tty_write_ansii_sequence(const char *format, ...);
 static void xd_tty_write(const void *data, int length);
@@ -195,6 +201,22 @@ static void xd_readline_destroy() {
 }  // xd_readline_destroy()
 
 /**
+ * @brief Inserts the passed character into the input buffer at the cursor
+ * position.
+ *
+ * @param chr The character to be inserted.
+ */
+static void xd_input_buffer_insert(char chr) {
+  // shift all the characters starting from the cursor by one to the right
+  for (int i = xd_input_length; i > xd_input_cursor; i--) {
+    xd_input_buffer[i] = xd_input_buffer[i - 1];
+  }
+  // insert the new character
+  xd_input_buffer[xd_input_cursor++] = chr;
+  xd_input_buffer[++xd_input_length] = XD_ASCII_NUL;
+}  // xd_input_buffer_insert()
+
+/**
  * @brief Changes the terminal input settings to raw.
  */
 static void xd_tty_raw() {
@@ -228,6 +250,38 @@ static void xd_tty_restore() {
     exit(EXIT_FAILURE);
   }
 }  // xd_tty_restore()
+
+/**
+ * @brief Clears the prompt and the temrinal input and puts the cursor at the
+ * beginning.
+ */
+static void xd_tty_input_clear() {
+  // move to the end of the input
+  xd_tty_cursor_move_right_wrap(xd_input_length - xd_input_cursor);
+
+  // clear all rows one by one bottom-up
+  int rows = (xd_tty_chars_count + xd_tty_win_width) / xd_tty_win_width;
+  for (int i = 0; i < rows; i++) {
+    xd_tty_write_ansii_sequence(XD_ANSI_LINE_CLR);
+    xd_tty_cursor_col = 1;
+    if (i < rows - 1) {
+      xd_tty_write_ansii_sequence(XD_ANSI_CRSR_MV_UP, 1);
+      xd_tty_cursor_row--;
+    }
+  }
+  xd_tty_chars_count = 0;
+}  // xd_tty_input_clear()
+
+/**
+ * @brief Clears the prompt and the input then re-writes them and puts the
+ * cursor in its proper position.
+ */
+static void xd_tty_input_redraw() {
+  xd_tty_input_clear();
+  xd_tty_write_track(xd_readline_prompt, xd_readline_prompt_length);
+  xd_tty_write_track(xd_input_buffer, xd_input_length);
+  xd_tty_cursor_move_left_wrap(xd_input_length - xd_input_cursor);
+}  // xd_tty_input_redraw()
 
 /**
  * @brief Writes a formatted ANSI escape sequence to the terminal.
@@ -348,10 +402,8 @@ static inline void xd_tty_cursor_move_right_wrap(int n) {
  * @param chr the input character.
  */
 static void xd_input_handle_printable(char chr) {
-  xd_input_buffer[xd_input_length++] = chr;
-  xd_input_buffer[xd_input_length] = XD_ASCII_NUL;
-  xd_tty_write_track(&chr, 1);
-  xd_input_cursor++;
+  xd_input_buffer_insert(chr);
+  xd_tty_input_redraw();
 }  // xd_input_handle_printable
 
 /**
@@ -425,7 +477,7 @@ static void xd_input_handler(char chr) {
   else if (iscntrl(chr)) {
     xd_input_handle_control(chr);
   }
-}  // xd_input_handler
+}  // xd_input_handler()
 
 // ========================
 // Public Functions
