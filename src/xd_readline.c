@@ -90,7 +90,7 @@ static void xd_input_handle_ctrl_f();
 static void xd_input_handle_ctrl_h();
 static void xd_input_handle_backspace();
 
-static void xd_input_handle_enter(char chr);
+static void xd_input_handle_enter();
 static void xd_input_handle_control(char chr);
 
 static void xd_input_handler(char chr);
@@ -146,6 +146,12 @@ static int xd_input_length = 0;
  * @brief The logical position of the cursor within the input buffer.
  */
 static int xd_input_cursor = 0;
+
+/**
+ * @brief Indicates whether to redraw the prompt and input befor reading another
+ * character (non-zero) or not (zero).
+ */
+static int xd_readline_redraw = 0;
 
 /**
  * @brief Indicates whether readline finished (non-zero) or not (zero).
@@ -286,7 +292,9 @@ static void xd_tty_restore() {
  */
 static void xd_tty_input_clear() {
   // move to the end of the input
-  xd_tty_cursor_move_right_wrap(xd_input_length - xd_input_cursor);
+  int cursor_flat_pos =
+      ((xd_tty_cursor_row - 1) * xd_tty_win_width) + xd_tty_cursor_col - 1;
+  xd_tty_cursor_move_right_wrap(xd_tty_chars_count - cursor_flat_pos);
 
   // clear all rows one by one bottom-up
   int rows = (xd_tty_chars_count + xd_tty_win_width) / xd_tty_win_width;
@@ -432,7 +440,7 @@ static inline void xd_tty_cursor_move_right_wrap(int n) {
  */
 static void xd_input_handle_printable(char chr) {
   xd_input_buffer_insert(chr);
-  xd_tty_input_redraw();
+  xd_readline_redraw = 1;
 }  // xd_input_handle_printable
 
 /**
@@ -477,7 +485,7 @@ static void xd_input_handle_ctrl_h() {
     return;
   }
   xd_input_buffer_remove_before_cursor(1);
-  xd_tty_input_redraw();
+  xd_readline_redraw = 1;
 }  // xd_input_handle_ctrl_h()
 
 /**
@@ -489,14 +497,12 @@ static void xd_input_handle_backspace() {
 
 /**
  * @brief Handles the case where the input is the `Enter` key.
- *
- * @param chr the input character.
  */
-static void xd_input_handle_enter(char chr) {
+static void xd_input_handle_enter() {
   xd_input_buffer[xd_input_length++] = XD_ASCII_LF;
   xd_input_buffer[xd_input_length] = XD_ASCII_NUL;
   xd_readline_finished = 1;
-  xd_tty_write(&chr, 1);
+  xd_tty_cursor_move_right_wrap(xd_input_length - xd_input_cursor - 1);
 }  // xd_input_handle_enter()
 
 /**
@@ -519,7 +525,7 @@ static void xd_input_handle_control(char chr) {
       xd_input_handle_ctrl_h();
       break;
     case XD_ASCII_LF:
-      xd_input_handle_enter(chr);
+      xd_input_handle_enter();
       break;
     case XD_ASCII_DEL:
       xd_input_handle_backspace();
@@ -548,9 +554,15 @@ static void xd_input_handler(char chr) {
 // ========================
 
 char *xd_readline() {
+  if (xd_readline_prompt != NULL) {
+    xd_readline_prompt_length = (int)strlen(xd_readline_prompt);
+  }
+
   xd_input_cursor = 0;
   xd_input_length = 0;
   xd_input_buffer[0] = XD_ASCII_NUL;
+
+  xd_readline_redraw = 1;
   xd_readline_return = xd_input_buffer;
   xd_readline_finished = 0;
 
@@ -560,13 +572,13 @@ char *xd_readline() {
 
   xd_tty_raw();
 
-  if (xd_readline_prompt != NULL) {
-    xd_readline_prompt_length = (int)strlen(xd_readline_prompt);
-    xd_tty_write_track(xd_readline_prompt, xd_readline_prompt_length);
-  }
-
   char chr;
   while (!xd_readline_finished) {
+    if (xd_readline_redraw) {
+      xd_tty_input_redraw();
+      xd_readline_redraw = 0;
+    }
+
     // read one character
     ssize_t ret = read(STDIN_FILENO, &chr, 1);
     if (ret == -1) {
@@ -580,12 +592,15 @@ char *xd_readline() {
     if (ret == 0) {
       xd_readline_finished = 1;
       xd_readline_return = NULL;
-      chr = XD_ASCII_LF;
-      xd_tty_write(&chr, 1);
       continue;
     }
 
     xd_input_handler(chr);
+  }
+
+  if (xd_tty_cursor_col != 1) {
+    chr = XD_ASCII_LF;
+    xd_tty_write(&chr, 1);
   }
 
   xd_tty_restore();
