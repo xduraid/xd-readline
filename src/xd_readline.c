@@ -35,12 +35,14 @@
  */
 #define XD_SMALL_BUFFER_SIZE (32)
 
-// ASCII chars
+// ASCII control characters
 
-#define XD_ASCII_NUL (0)   // ASCII for `NUL`
-#define XD_ASCII_STX (2)   // ASCII for `STX` (`Ctrl+B`)
-#define XD_ASCII_ACK (6)   // ASCII for `ACK` (`Ctrl+F`)
-#define XD_ASCII_LF  (10)  // ASCII for `LF` (`Enter`)
+#define XD_ASCII_NUL (0)    // ASCII for `NUL`
+#define XD_ASCII_STX (2)    // ASCII for `STX` (`Ctrl+B`)
+#define XD_ASCII_ACK (6)    // ASCII for `ACK` (`Ctrl+F`)
+#define XD_ASCII_BS  (8)    // ASCII for `BS` (`Ctrl+H`)
+#define XD_ASCII_LF  (10)   // ASCII for `LF` (`Enter`)
+#define XD_ASCII_DEL (127)  // ASCII for `DEL` (`Backspace`)
 
 // ANSI sequences' formats
 
@@ -61,6 +63,7 @@ static void xd_readline_init() __attribute__((constructor));
 static void xd_readline_destroy() __attribute__((destructor));
 
 static void xd_input_buffer_insert(char chr);
+static void xd_input_buffer_remove_before_cursor(int n);
 
 static void xd_tty_raw();
 static void xd_tty_restore();
@@ -79,6 +82,9 @@ static void xd_input_handle_printable(char chr);
 
 static void xd_input_handle_ctrl_b();
 static void xd_input_handle_ctrl_f();
+
+static void xd_input_handle_ctrl_h();
+static void xd_input_handle_backspace();
 
 static void xd_input_handle_enter(char chr);
 static void xd_input_handle_control(char chr);
@@ -215,6 +221,25 @@ static void xd_input_buffer_insert(char chr) {
   xd_input_buffer[xd_input_cursor++] = chr;
   xd_input_buffer[++xd_input_length] = XD_ASCII_NUL;
 }  // xd_input_buffer_insert()
+
+/**
+ * @brief Removes a number of characters before the cursor from the input
+ * buffer.
+ *
+ * @param n The number of characters to be removed
+ */
+static void xd_input_buffer_remove_before_cursor(int n) {
+  if (xd_input_cursor < n) {
+    return;
+  }
+
+  // shift all characters starting from the cursor by n to the left
+  for (int i = xd_input_cursor; i < xd_input_length; i++) {
+    xd_input_buffer[i - n] = xd_input_buffer[i];
+  }
+  xd_input_cursor -= n;
+  xd_input_length -= n;
+}  // xd_input_buffer_remove_before_cursor()
 
 /**
  * @brief Changes the terminal input settings to raw.
@@ -433,6 +458,28 @@ static void xd_input_handle_ctrl_f() {
 }  // xd_input_handle_ctrl_f()
 
 /**
+ * @brief Handles the case where the input is `Ctrl+H`.
+ *
+ * @param chr the input character.
+ */
+static void xd_input_handle_ctrl_h() {
+  if (xd_input_cursor == 0) {
+    return;
+  }
+  xd_input_buffer_remove_before_cursor(1);
+  xd_tty_input_redraw();
+}  // xd_input_handle_ctrl_h()
+
+/**
+ * @brief Handles the case where the input is the`Backspace` key.
+ *
+ * @param chr the input character.
+ */
+static void xd_input_handle_backspace() {
+  xd_input_handle_ctrl_h();
+}  // xd_input_handle_backspace()
+
+/**
  * @brief Handles the case where the input is the `Enter` key.
  *
  * @param chr the input character.
@@ -457,8 +504,14 @@ static void xd_input_handle_control(char chr) {
     case XD_ASCII_ACK:
       xd_input_handle_ctrl_f();
       break;
+    case XD_ASCII_BS:
+      xd_input_handle_ctrl_h();
+      break;
     case XD_ASCII_LF:
       xd_input_handle_enter(chr);
+      break;
+    case XD_ASCII_DEL:
+      xd_input_handle_backspace(chr);
       break;
     default:
       break;
