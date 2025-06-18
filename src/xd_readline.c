@@ -45,6 +45,7 @@
 #define XD_ASCII_EOT (4)    // ASCII for `EOT` (`Ctrl+D`)
 #define XD_ASCII_ENQ (5)    // ASCII for `ENQ` (`Ctrl+E`)
 #define XD_ASCII_ACK (6)    // ASCII for `ACK` (`Ctrl+F`)
+#define XD_ASCII_BEL (7)    // ASCII for `BEL` (`Ctrl+G`)
 #define XD_ASCII_BS  (8)    // ASCII for `BS` (`Ctrl+H`)
 #define XD_ASCII_LF  (10)   // ASCII for `LF` (`Enter`)
 #define XD_ASCII_DEL (127)  // ASCII for `DEL` (`Backspace`)
@@ -74,6 +75,8 @@ static void xd_input_buffer_remove_from_cursor(int n);
 static void xd_tty_raw();
 static void xd_tty_restore();
 
+static inline void xd_tty_bell();
+
 static void xd_tty_input_clear();
 static void xd_tty_input_redraw();
 
@@ -91,8 +94,9 @@ static void xd_input_handle_ctrl_b();
 static void xd_input_handle_ctrl_d();
 static void xd_input_handle_ctrl_e();
 static void xd_input_handle_ctrl_f();
-
+static void xd_input_handle_ctrl_g();
 static void xd_input_handle_ctrl_h();
+
 static void xd_input_handle_backspace();
 
 static void xd_input_handle_enter();
@@ -310,6 +314,14 @@ static void xd_tty_restore() {
 }  // xd_tty_restore()
 
 /**
+ * @brief Write bell character to terminal to make an alert sound.
+ */
+static inline void xd_tty_bell() {
+  char chr = XD_ASCII_BEL;
+  xd_tty_write(&chr, 1);
+}  // xd_tty_bell_sound()
+
+/**
  * @brief Clears the prompt and the temrinal input and puts the cursor at the
  * beginning.
  */
@@ -482,6 +494,7 @@ static void xd_input_handle_ctrl_a() {
  */
 static void xd_input_handle_ctrl_b() {
   if (xd_input_cursor == 0) {
+    xd_tty_bell();
     return;
   }
   xd_tty_cursor_move_left_wrap(1);
@@ -500,6 +513,7 @@ static void xd_input_handle_ctrl_d() {
     return;
   }
   if (xd_input_cursor == xd_input_length) {
+    xd_tty_bell();
     return;
   }
   xd_input_buffer_remove_from_cursor(1);
@@ -518,10 +532,11 @@ static void xd_input_handle_ctrl_e() {
 }  // xd_input_handle_ctrl_e()
 
 /**
- * @brief Handles the case where the input is `Ctrl+F` key.
+ * @brief Handles the case where the input is `Ctrl+F`.
  */
 static void xd_input_handle_ctrl_f() {
   if (xd_input_cursor == xd_input_length) {
+    xd_tty_bell();
     return;
   }
   xd_tty_cursor_move_right_wrap(1);
@@ -529,10 +544,18 @@ static void xd_input_handle_ctrl_f() {
 }  // xd_input_handle_ctrl_f()
 
 /**
+ * @brief Handles the case where the input is `Ctrl+G`.
+ */
+static void xd_input_handle_ctrl_g() {
+  xd_tty_bell();
+}  // xd_input_handle_ctrl_g()
+
+/**
  * @brief Handles the case where the input is `Ctrl+H`.
  */
 static void xd_input_handle_ctrl_h() {
   if (xd_input_cursor == 0) {
+    xd_tty_bell();
     return;
   }
   xd_input_buffer_remove_before_cursor(1);
@@ -577,6 +600,9 @@ static void xd_input_handle_control(char chr) {
       break;
     case XD_ASCII_ACK:
       xd_input_handle_ctrl_f();
+      break;
+    case XD_ASCII_BEL:
+      xd_input_handle_ctrl_g();
       break;
     case XD_ASCII_BS:
       xd_input_handle_ctrl_h();
