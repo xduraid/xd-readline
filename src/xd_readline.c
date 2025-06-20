@@ -58,6 +58,8 @@
 
 #define XD_ANSI_RIGHT_ARROW "\033[C"  // ANSI for `Right Arrow` key
 #define XD_ANSI_LEFT_ARROW  "\033[D"  // ANSI for `Left Arrow` key
+#define XD_ANSI_HOME        "\033[H"  // ANSI for `Home` key
+#define XD_ANSI_END         "\033[F"  // ANSI for `End` key
 
 // ANSI sequences' formats
 
@@ -129,6 +131,9 @@ static void xd_input_handle_enter();
 
 static void xd_input_handle_right_arrow();
 static void xd_input_handle_left_arrow();
+
+static void xd_input_handle_home();
+static void xd_input_handle_end();
 
 static void xd_input_handle_escape_sequence();
 
@@ -216,6 +221,8 @@ static int xd_readline_prompt_length = 0;
 static const xd_esc_seq_binding_t xd_esc_seq_bindings[] = {
     {XD_ANSI_RIGHT_ARROW, xd_input_handle_right_arrow},
     {XD_ANSI_LEFT_ARROW,  xd_input_handle_left_arrow },
+    {XD_ANSI_HOME,        xd_input_handle_home       },
+    {XD_ANSI_END,         xd_input_handle_end        },
 };
 
 /**
@@ -674,6 +681,20 @@ static void xd_input_handle_right_arrow() {
 static void xd_input_handle_left_arrow() {
   xd_input_handle_ctrl_b();
 }  // xd_input_handle_left_arrow()
+
+/**
+ * @brief Handles the case where the input is the `Home` key.
+ */
+static void xd_input_handle_home() {
+  xd_input_handle_ctrl_a();
+}  // xd_input_handle_home()
+
+/**
+ * @brief Handles the case where the input is the `End` key.
+ */
+static void xd_input_handle_end() {
+  xd_input_handle_ctrl_e();
+}  // xd_input_handle_end()
 
 /**
  * @brief Handles the case where the input is an escape sequence.
