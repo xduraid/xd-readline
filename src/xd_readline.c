@@ -56,10 +56,11 @@
 
 // ANSI escape sequences for keyboard shortcuts
 
-#define XD_ANSI_RIGHT_ARROW "\033[C"  // ANSI for `Right Arrow` key
-#define XD_ANSI_LEFT_ARROW  "\033[D"  // ANSI for `Left Arrow` key
-#define XD_ANSI_HOME        "\033[H"  // ANSI for `Home` key
-#define XD_ANSI_END         "\033[F"  // ANSI for `End` key
+#define XD_ANSI_RIGHT_ARROW "\033[C"   // ANSI for `Right Arrow` key
+#define XD_ANSI_LEFT_ARROW  "\033[D"   // ANSI for `Left Arrow` key
+#define XD_ANSI_HOME        "\033[H"   // ANSI for `Home` key
+#define XD_ANSI_END         "\033[F"   // ANSI for `End` key
+#define XD_ANSI_DELETE      "\033[3~"  // ANSI for `Delete` key
 
 // ANSI sequences' formats
 
@@ -134,6 +135,7 @@ static void xd_input_handle_left_arrow();
 
 static void xd_input_handle_home();
 static void xd_input_handle_end();
+static void xd_input_handle_delete();
 
 static void xd_input_handle_escape_sequence();
 
@@ -223,6 +225,7 @@ static const xd_esc_seq_binding_t xd_esc_seq_bindings[] = {
     {XD_ANSI_LEFT_ARROW,  xd_input_handle_left_arrow },
     {XD_ANSI_HOME,        xd_input_handle_home       },
     {XD_ANSI_END,         xd_input_handle_end        },
+    {XD_ANSI_DELETE,      xd_input_handle_delete     },
 };
 
 /**
@@ -560,18 +563,11 @@ static void xd_input_handle_ctrl_b() {
  */
 static void xd_input_handle_ctrl_d() {
   if (xd_input_length == 0) {
-    char chr = XD_ASCII_LF;
-    xd_tty_write(&chr, 1);
     xd_readline_finished = 1;
     xd_readline_return = NULL;
     return;
   }
-  if (xd_input_cursor == xd_input_length) {
-    xd_tty_bell();
-    return;
-  }
-  xd_input_buffer_remove_from_cursor(1);
-  xd_readline_redraw = 1;
+  xd_input_handle_delete();
 }  // xd_input_handle_ctrl_d()
 
 /**
@@ -695,6 +691,18 @@ static void xd_input_handle_home() {
 static void xd_input_handle_end() {
   xd_input_handle_ctrl_e();
 }  // xd_input_handle_end()
+
+/**
+ * @brief Handles the case where the input is the `Delete` key.
+ */
+static void xd_input_handle_delete() {
+  if (xd_input_cursor == xd_input_length) {
+    xd_tty_bell();
+    return;
+  }
+  xd_input_buffer_remove_from_cursor(1);
+  xd_readline_redraw = 1;
+}  // xd_input_handle_delete()
 
 /**
  * @brief Handles the case where the input is an escape sequence.
