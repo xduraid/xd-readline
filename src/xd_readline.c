@@ -51,7 +51,13 @@
 #define XD_ASCII_VT  (11)   // ASCII for `VT` (`Ctrl+K`)
 #define XD_ASCII_FF  (12)   // ASCII for `FF` (`Ctrl+L`)
 #define XD_ASCII_NAK (21)   // ASCII for `NAK` (`Ctrl+U`)
+#define XD_ASCII_ESC (27)   // ASCII for `ESC` (`Esc`)
 #define XD_ASCII_DEL (127)  // ASCII for `DEL` (`Backspace`)
+
+// ANSI escape sequences for keyboard shortcuts
+
+#define XD_ANSI_RIGHT_ARROW "\033[C"  // ANSI for `Right Arrow` key
+#define XD_ANSI_LEFT_ARROW  "\033[D"  // ANSI for `Left Arrow` key
 
 // ANSI sequences' formats
 
@@ -65,6 +71,19 @@
 // ========================
 // Typedefs
 // ========================
+
+/**
+ * @brief Input handler function type.
+ */
+typedef void (*xd_input_handler_func)(void);
+
+/**
+ * @brief Represents an ANSI escape sequence to input handler function binding.
+ */
+typedef struct xd_esc_seq_binding_t {
+  const char *sequence;                 // The escape sequence string.
+  const xd_input_handler_func handler;  // The handler function.
+} xd_esc_seq_binding_t;
 
 // ========================
 // Function Declarations
@@ -106,8 +125,13 @@ static void xd_input_handle_ctrl_l();
 static void xd_input_handle_ctrl_u();
 
 static void xd_input_handle_backspace();
-
 static void xd_input_handle_enter();
+
+static void xd_input_handle_right_arrow();
+static void xd_input_handle_left_arrow();
+
+static void xd_input_handle_escape_sequence();
+
 static void xd_input_handle_control(char chr);
 
 static void xd_input_handler(char chr);
@@ -184,6 +208,21 @@ static char *xd_readline_return = NULL;
  * @brief The length of the input prompt string.
  */
 static int xd_readline_prompt_length = 0;
+
+/**
+ * @brief Array mapping ANSI escape sequences to corresponding input
+ * handlers.
+ */
+static const xd_esc_seq_binding_t xd_esc_seq_bindings[] = {
+    {XD_ANSI_RIGHT_ARROW, xd_input_handle_right_arrow},
+    {XD_ANSI_LEFT_ARROW,  xd_input_handle_left_arrow },
+};
+
+/**
+ * @brief Number of defined escape sequence bindings.
+ */
+static const int xd_esc_seq_bindings_length =
+    sizeof(xd_esc_seq_bindings) / sizeof(xd_esc_seq_bindings[0]);
 
 // ========================
 // Public Variables
@@ -623,6 +662,61 @@ static void xd_input_handle_enter() {
 }  // xd_input_handle_enter()
 
 /**
+ * @brief Handles the case where the input is the `Right Arrow` key.
+ */
+static void xd_input_handle_right_arrow() {
+  xd_input_handle_ctrl_f();
+}  // xd_input_handle_right_arrow()
+
+/**
+ * @brief Handles the case where the input is the `Left Arrow` key.
+ */
+static void xd_input_handle_left_arrow() {
+  xd_input_handle_ctrl_b();
+}  // xd_input_handle_left_arrow()
+
+/**
+ * @brief Handles the case where the input is an escape sequence.
+ */
+static void xd_input_handle_escape_sequence() {
+  // buffer for reading the escape sequence
+  int idx = 0;
+  char buffer[XD_SMALL_BUFFER_SIZE];
+  buffer[idx++] = XD_ASCII_ESC;
+  buffer[idx] = XD_ASCII_NUL;
+
+  // read the escape sequence chracters one by one
+  char chr;
+  int is_valid_prefix = 0;
+  while (idx < XD_SMALL_BUFFER_SIZE - 1) {
+    if (read(STDIN_FILENO, &chr, 1) != 1) {
+      return;
+    }
+    buffer[idx++] = chr;
+    buffer[idx] = XD_ASCII_NUL;
+
+    is_valid_prefix = 0;
+
+    for (int i = 0; i < xd_esc_seq_bindings_length; i++) {
+      // the read sequence is a defined escape sequence binding
+      if (strcmp(buffer, xd_esc_seq_bindings[i].sequence) == 0) {
+        xd_esc_seq_bindings[i].handler();
+        return;
+      }
+      // the read sequence is a prefix for a defined escape sequence binding
+      if (!is_valid_prefix &&
+          strncmp(buffer, xd_esc_seq_bindings[i].sequence, idx) == 0) {
+        is_valid_prefix = 1;
+      }
+    }
+
+    if (!is_valid_prefix) {
+      break;
+    }
+  }
+}  // xd_input_handle_escape_sequence()
+
+/**
  * @brief Handles the case where the input is a control character.
  *
  * @param chr The input character.
@@ -661,6 +755,9 @@ static void xd_input_handle_control(char chr) {
       break;
     case XD_ASCII_NAK:
       xd_input_handle_ctrl_u();
+      break;
+    case XD_ASCII_ESC:
+      xd_input_handle_escape_sequence();
       break;
     case XD_ASCII_DEL:
       xd_input_handle_backspace();
