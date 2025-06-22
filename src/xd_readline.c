@@ -1027,6 +1027,18 @@ char *xd_readline() {
       xd_readline_redraw = 0;
     }
 
+    // expand the input buffer
+    if (xd_input_length == xd_input_capacity - 1) {
+      char *ptr =
+          realloc(xd_input_buffer, sizeof(char) * xd_input_capacity * 2);
+      if (ptr == NULL) {
+        break;
+      }
+      xd_input_capacity *= 2;
+      xd_input_buffer = ptr;
+      xd_readline_return = xd_input_buffer;
+    }
+
     // read one character
     ssize_t ret = read(STDIN_FILENO, &chr, 1);
     if (ret == -1) {
