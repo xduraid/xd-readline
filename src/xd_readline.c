@@ -64,8 +64,10 @@
 #define XD_ANSI_DELETE      "\033[3~"  // ANSI for `Delete` key
 
 #define XD_ANSI_ALT_F "\033f"  // ANSI for `ALT+F` key binding
+#define XD_ANSI_ALT_B "\033b"  // ANSI for `ALT+B` key binding
 
 #define XD_ANSI_CTRL_RARROW "\033[1;5C"  // ANSI for `Ctrl+Right Arrow` binding
+#define XD_ANSI_CTRL_LARROW "\033[1;5D"  // ANSI for `Ctrl+Left Arrow` binding
 
 // ANSI sequences' formats
 
@@ -105,6 +107,7 @@ static void xd_input_buffer_remove_before_cursor(int n);
 static void xd_input_buffer_remove_from_cursor(int n);
 
 static int xd_input_buffer_get_current_word_end();
+static int xd_input_buffer_get_current_word_start();
 
 static void xd_tty_raw();
 static void xd_tty_restore();
@@ -147,8 +150,10 @@ static void xd_input_handle_end();
 static void xd_input_handle_delete();
 
 static void xd_input_handle_ctrl_right_arrow();
+static void xd_input_handle_ctrl_left_arrow();
 
 static void xd_input_handle_alt_f();
+static void xd_input_handle_alt_b();
 
 static void xd_input_handle_escape_sequence();
 
@@ -247,7 +252,9 @@ static const xd_esc_seq_binding_t xd_esc_seq_bindings[] = {
     {XD_ANSI_END,         xd_input_handle_end             },
     {XD_ANSI_DELETE,      xd_input_handle_delete          },
     {XD_ANSI_ALT_F,       xd_input_handle_alt_f           },
+    {XD_ANSI_ALT_B,       xd_input_handle_alt_b           },
     {XD_ANSI_CTRL_RARROW, xd_input_handle_ctrl_right_arrow},
+    {XD_ANSI_CTRL_LARROW, xd_input_handle_ctrl_left_arrow },
 };
 
 /**
@@ -381,6 +388,25 @@ static int xd_input_buffer_get_current_word_end() {
   }
   return idx;
 }  // xd_input_buffer_get_current_word_end()
+
+/**
+ * @brief Finds the start position of the current word in the input
+ * buffer.
+ *
+ * @return The index of the current word start.
+ */
+static int xd_input_buffer_get_current_word_start() {
+  int idx = xd_input_cursor;
+  // skip all non-alphanumeric characters
+  while (idx > 0 && !isalnum(xd_input_buffer[idx - 1])) {
+    idx--;
+  }
+  // skip the word
+  while (idx > 0 && isalnum(xd_input_buffer[idx - 1])) {
+    idx--;
+  }
+  return idx;
+}  // xd_input_buffer_get_current_word_start()
 
 /**
  * @brief Changes the terminal input settings to raw.
@@ -775,6 +801,13 @@ static void xd_input_handle_ctrl_right_arrow() {
 }  // xd_input_handle_ctrl_right_arrow()
 
 /**
+ * @brief Handles the case where the input is `Ctrl+Left Arrow`.
+ */
+static void xd_input_handle_ctrl_left_arrow() {
+  xd_input_handle_alt_b();
+}  // xd_input_handle_ctrl_left_arrow()
+
+/**
  * @brief Handles the case where the input is `Alt+F`.
  */
 static void xd_input_handle_alt_f() {
@@ -786,6 +819,19 @@ static void xd_input_handle_alt_f() {
   xd_tty_cursor_move_right_wrap(idx - xd_input_cursor);
   xd_input_cursor = idx;
 }  // xd_input_handle_alt_f()
+
+/**
+ * @brief Handles the case where the input is `Alt+B`.
+ */
+static void xd_input_handle_alt_b() {
+  if (xd_input_cursor == 0) {
+    xd_tty_bell();
+    return;
+  }
+  int idx = xd_input_buffer_get_current_word_start();
+  xd_tty_cursor_move_left_wrap(xd_input_cursor - idx);
+  xd_input_cursor = idx;
+}  // xd_input_handle_alt_b()
 
 /**
  * @brief Handles the case where the input is an escape sequence.
