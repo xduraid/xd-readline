@@ -65,9 +65,11 @@
 
 #define XD_ANSI_ALT_F "\033f"  // ANSI for `ALT+F` key binding
 #define XD_ANSI_ALT_B "\033b"  // ANSI for `ALT+B` key binding
+#define XD_ANSI_ALT_D "\033d"  // ANSI for `ALT+D` key binding
 
 #define XD_ANSI_CTRL_RARROW "\033[1;5C"  // ANSI for `Ctrl+Right Arrow` binding
 #define XD_ANSI_CTRL_LARROW "\033[1;5D"  // ANSI for `Ctrl+Left Arrow` binding
+#define XD_ANSI_CTRL_DELETE "\033[3;5~"  // ANSI for `Ctrl+Delete` binding
 
 // ANSI sequences' formats
 
@@ -151,9 +153,11 @@ static void xd_input_handle_delete();
 
 static void xd_input_handle_ctrl_right_arrow();
 static void xd_input_handle_ctrl_left_arrow();
+static void xd_input_handle_ctrl_delete();
 
 static void xd_input_handle_alt_f();
 static void xd_input_handle_alt_b();
+static void xd_input_handle_alt_d();
 
 static void xd_input_handle_escape_sequence();
 
@@ -253,8 +257,10 @@ static const xd_esc_seq_binding_t xd_esc_seq_bindings[] = {
     {XD_ANSI_DELETE,      xd_input_handle_delete          },
     {XD_ANSI_ALT_F,       xd_input_handle_alt_f           },
     {XD_ANSI_ALT_B,       xd_input_handle_alt_b           },
+    {XD_ANSI_ALT_D,       xd_input_handle_alt_d           },
     {XD_ANSI_CTRL_RARROW, xd_input_handle_ctrl_right_arrow},
     {XD_ANSI_CTRL_LARROW, xd_input_handle_ctrl_left_arrow },
+    {XD_ANSI_CTRL_DELETE, xd_input_handle_ctrl_delete     },
 };
 
 /**
@@ -808,6 +814,13 @@ static void xd_input_handle_ctrl_left_arrow() {
 }  // xd_input_handle_ctrl_left_arrow()
 
 /**
+ * @brief Handles the case where the input is `Ctrl+Delete`.
+ */
+static void xd_input_handle_ctrl_delete() {
+  xd_input_handle_alt_d();
+}  // xd_input_handle_ctrl_delete()
+
+/**
  * @brief Handles the case where the input is `Alt+F`.
  */
 static void xd_input_handle_alt_f() {
@@ -832,6 +845,19 @@ static void xd_input_handle_alt_b() {
   xd_tty_cursor_move_left_wrap(xd_input_cursor - idx);
   xd_input_cursor = idx;
 }  // xd_input_handle_alt_b()
+
+/**
+ * @brief Handles the case where the input is `Alt+D`.
+ */
+static void xd_input_handle_alt_d() {
+  if (xd_input_cursor == xd_input_length) {
+    xd_tty_bell();
+    return;
+  }
+  int idx = xd_input_buffer_get_current_word_end();
+  xd_input_buffer_remove_from_cursor(idx - xd_input_cursor);
+  xd_readline_redraw = 1;
+}  // xd_input_handle_alt_d()
 
 /**
  * @brief Handles the case where the input is an escape sequence.
