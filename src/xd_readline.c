@@ -20,6 +20,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -107,6 +108,8 @@ static inline void xd_tty_bell();
 static void xd_tty_input_clear();
 static void xd_tty_input_redraw();
 
+static void xd_tty_screen_resize();
+
 static void xd_tty_write_ansii_sequence(const char *format, ...);
 static void xd_tty_write(const void *data, int length);
 static void xd_tty_write_track(const void *data, int length);
@@ -143,6 +146,8 @@ static void xd_input_handle_control(char chr);
 
 static void xd_input_handler(char chr);
 
+static void xd_sigwinch_handler(int sig_num);
+
 // ========================
 // Variables
 // ========================
@@ -156,6 +161,11 @@ static struct termios xd_original_tty_attributes;
  * @brief The terminal current window width.
  */
 static int xd_tty_win_width = 0;
+
+/**
+ * @brief Indicates whether `SIGWINCH` signal has been received.
+ */
+static volatile sig_atomic_t xd_tty_win_resized = 0;
 
 /**
  * @brief The terminal cursor row position (1-based) relative to the beginning
@@ -252,6 +262,12 @@ static void xd_readline_init() {
   if (!isatty(STDIN_FILENO) || !isatty(STDOUT_FILENO)) {
     fprintf(stderr, "xd_readline only works with a tty IO\n");
     fprintf(stderr, "exiting...\n");
+    exit(EXIT_FAILURE);
+  }
+
+  // register `SIGWINCH` singal handler
+  if (signal(SIGWINCH, xd_sigwinch_handler) == SIG_ERR) {
+    fprintf(stderr, "xd_readline: failed to set `SIGWINCH` handler: \n");
     exit(EXIT_FAILURE);
   }
 
@@ -411,6 +427,22 @@ static void xd_tty_input_redraw() {
   xd_tty_write_track(xd_input_buffer, xd_input_length);
   xd_tty_cursor_move_left_wrap(xd_input_length - xd_input_cursor);
 }  // xd_tty_input_redraw()
+
+/**
+ * @brief Handles terminal screen resize by getting the new window width and
+ * calculating the new cursor position.
+ */
+static void xd_tty_screen_resize() {
+  struct winsize wsz;
+  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsz) == 0) {
+    int cursor_flat_pos =
+        ((xd_tty_cursor_row - 1) * xd_tty_win_width) + xd_tty_cursor_col - 1;
+    xd_tty_win_width = wsz.ws_col;
+    xd_tty_cursor_row = (cursor_flat_pos / xd_tty_win_width) + 1;
+    xd_tty_cursor_col = (cursor_flat_pos % xd_tty_win_width) + 1;
+    xd_readline_redraw = 1;
+  }
+}  // xd_tty_screen_resize()
 
 /**
  * @brief Writes a formatted ANSI escape sequence to the terminal.
@@ -810,6 +842,16 @@ static void xd_input_handler(char chr) {
   }
 }  // xd_input_handler()
 
+/**
+ * @brief handler for `SIGWINCH` signal.
+ *
+ * @param sig_num The signal number.
+ */
+static void xd_sigwinch_handler(int sig_num) {
+  (void)sig_num;  // suprees unused param
+  xd_tty_win_resized = 1;
+}  // xd_sigwinch_handler(int sig_num)
+
 // ========================
 // Public Functions
 // ========================
@@ -835,6 +877,11 @@ char *xd_readline() {
 
   char chr;
   while (!xd_readline_finished) {
+    if (xd_tty_win_resized) {
+      xd_tty_screen_resize();
+      xd_tty_win_resized = 0;
+    }
+
     if (xd_readline_redraw) {
       xd_tty_input_redraw();
       xd_readline_redraw = 0;
