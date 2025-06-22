@@ -631,6 +631,11 @@ static inline void xd_tty_cursor_move_right_wrap(int n) {
  */
 static void xd_input_handle_printable(char chr) {
   xd_input_buffer_insert(chr);
+  if (xd_input_cursor == xd_input_length) {
+    xd_tty_write_track(&chr, 1);
+    // don't redraw when adding to the end
+    return;
+  }
   xd_readline_redraw = 1;
 }  // xd_input_handle_printable()
 
