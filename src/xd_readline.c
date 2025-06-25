@@ -57,6 +57,8 @@
 
 // ANSI escape sequences for keyboard shortcuts
 
+#define XD_ANSI_UP_ARROW    "\033[A"   // ANSI for `Up Arrow` key
+#define XD_ANSI_DOWN_ARROW  "\033[B"   // ANSI for `Down Arrow` key
 #define XD_ANSI_RIGHT_ARROW "\033[C"   // ANSI for `Right Arrow` key
 #define XD_ANSI_LEFT_ARROW  "\033[D"   // ANSI for `Left Arrow` key
 #define XD_ANSI_HOME        "\033[H"   // ANSI for `Home` key
@@ -125,6 +127,9 @@ static void xd_input_buffer_remove_from_cursor(int n);
 static int xd_input_buffer_get_current_word_end();
 static int xd_input_buffer_get_current_word_start();
 
+static void xd_input_buffer_save_to_history();
+static void xd_input_buffer_load_from_history();
+
 static void xd_tty_raw();
 static void xd_tty_restore();
 
@@ -158,6 +163,8 @@ static void xd_input_handle_ctrl_u();
 static void xd_input_handle_backspace();
 static void xd_input_handle_enter();
 
+static void xd_input_handle_up_arrow();
+static void xd_input_handle_down_arrow();
 static void xd_input_handle_right_arrow();
 static void xd_input_handle_left_arrow();
 
@@ -290,6 +297,8 @@ static int xd_history_length = 0;
  * handlers.
  */
 static const xd_esc_seq_binding_t xd_esc_seq_bindings[] = {
+    {XD_ANSI_UP_ARROW,    xd_input_handle_up_arrow        },
+    {XD_ANSI_DOWN_ARROW,  xd_input_handle_down_arrow      },
     {XD_ANSI_RIGHT_ARROW, xd_input_handle_right_arrow     },
     {XD_ANSI_LEFT_ARROW,  xd_input_handle_left_arrow      },
     {XD_ANSI_HOME,        xd_input_handle_home            },
@@ -510,6 +519,63 @@ static int xd_input_buffer_get_current_word_start() {
   }
   return idx;
 }  // xd_input_buffer_get_current_word_start()
+
+/**
+ * @brief Saves the contents of the input buffer to the current navigation entry
+ * in the history (at `xd_history_nav_idx`).
+ */
+static void xd_input_buffer_save_to_history() {
+  xd_history_entry_t *history_entry = xd_history[xd_history_nav_idx];
+
+  // resize the history entry string if needed
+  if (xd_input_length > history_entry->capacity - 1) {
+    // resize to multiple of `LINE_MAX`
+    int new_capacity = xd_input_length + 1;
+    if (new_capacity % LINE_MAX != 0) {
+      new_capacity += LINE_MAX - (new_capacity % LINE_MAX);
+    }
+
+    char *ptr = (char *)realloc(history_entry->str, new_capacity);
+    if (ptr == NULL) {
+      return;  // allocation error, stop saving
+    }
+    history_entry->capacity = new_capacity;
+    history_entry->str = ptr;
+  }
+
+  memcpy(history_entry->str, xd_input_buffer, xd_input_length);
+  history_entry->str[xd_input_length] = XD_ASCII_NUL;
+  history_entry->length = xd_input_length;
+}  // xd_input_buffer_save_to_history()
+
+/**
+ * @brief Loads the contents of the current navigation entry in the history (at
+ * `xd_history_nav_idx`) to the input buffer.
+ */
+static void xd_input_buffer_load_from_history() {
+  xd_history_entry_t *history_entry = xd_history[xd_history_nav_idx];
+
+  // resize the input buffer if needed
+  if (history_entry->length > xd_input_capacity - 1) {
+    // resize to multiple of `LINE_MAX`
+    int new_capacity = history_entry->length + 1;
+    if (new_capacity % LINE_MAX != 0) {
+      new_capacity += LINE_MAX - (new_capacity % LINE_MAX);
+    }
+
+    char *ptr = (char *)realloc(xd_input_buffer, new_capacity);
+    if (ptr == NULL) {
+      return;  // allocation error, stop loading
+    }
+    xd_input_capacity = new_capacity;
+    xd_input_buffer = ptr;
+  }
+
+  xd_input_length = history_entry->length;
+  xd_input_cursor = xd_input_length;
+  memcpy(xd_input_buffer, history_entry->str, xd_input_length);
+  xd_input_buffer[xd_input_length] = XD_ASCII_NUL;
+}  // xd_input_buffer_load_from_history()
 
 /**
  * @brief Changes the terminal input settings to raw.
@@ -862,6 +928,47 @@ static void xd_input_handle_enter() {
 }  // xd_input_handle_enter()
 
 /**
+ * @brief Handles the case where the input is the `Up Arrow` key.
+ */
+static void xd_input_handle_up_arrow() {
+  if (xd_history_length == 0 || xd_history_nav_idx == xd_history_start_idx) {
+    xd_tty_bell();
+    return;
+  }
+
+  xd_input_buffer_save_to_history();
+  if (xd_history_nav_idx == XD_HISTORY_MAX) {
+    xd_history_nav_idx = xd_history_end_idx;
+  }
+  else {
+    xd_history_nav_idx =
+        (xd_history_nav_idx - 1 + XD_HISTORY_MAX) % XD_HISTORY_MAX;
+  }
+  xd_input_buffer_load_from_history();
+  xd_readline_redraw = 1;
+}  // xd_input_handle_up_arrow()
+
+/**
+ * @brief Handles the case where the input is the `Down Arrow` key.
+ */
+static void xd_input_handle_down_arrow() {
+  if (xd_history_length == 0 || xd_history_nav_idx == XD_HISTORY_MAX) {
+    xd_tty_bell();
+    return;
+  }
+
+  xd_input_buffer_save_to_history();
+  if (xd_history_nav_idx == xd_history_end_idx) {
+    xd_history_nav_idx = XD_HISTORY_MAX;
+  }
+  else {
+    xd_history_nav_idx = (xd_history_nav_idx + 1) % XD_HISTORY_MAX;
+  }
+  xd_input_buffer_load_from_history();
+  xd_readline_redraw = 1;
+}  // xd_input_handle_down_arrow()
+
+/**
  * @brief Handles the case where the input is the `Right Arrow` key.
  */
 static void xd_input_handle_right_arrow() {
@@ -1110,6 +1217,8 @@ char *xd_readline() {
   xd_tty_cursor_row = 1;
   xd_tty_cursor_col = 1;
   xd_tty_chars_count = 0;
+
+  xd_history_nav_idx = XD_HISTORY_MAX;
 
   xd_tty_raw();
 
