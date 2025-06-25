@@ -43,4 +43,15 @@ char *xd_readline();
  */
 void xd_readline_history_clear();
 
+/**
+ * @brief Adds a copy of the passed string (without trailing newline) to the
+ * history.
+ *
+ * @param str The string to be added to the history, must be null-terminated.
+ *
+ * @return `0` on success or `-1` if the passed string is `NULL` or on
+ * allcoation failure.
+ */
+int xd_readline_history_add(const char *str);
+
 #endif  // XD_READLINE_H

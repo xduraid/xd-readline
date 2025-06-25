@@ -1175,3 +1175,51 @@ void xd_readline_history_clear() {
   xd_history_end_idx = XD_HISTORY_MAX - 1;
   xd_history_length = 0;
 }  // xd_readline_history_clear()
+
+int xd_readline_history_add(const char *str) {
+  if (str == NULL) {
+    return -1;
+  }
+
+  // ignore the trailing newline at the end
+  int str_length = (int)strlen(str);
+  if (str_length > 0 && str[str_length - 1] == XD_ASCII_LF) {
+    str_length--;
+  }
+
+  int new_end_idx = (xd_history_end_idx + 1) % XD_HISTORY_MAX;
+  xd_history_entry_t *history_entry = xd_history[new_end_idx];
+
+  // resize the history entry string if needed
+  if (str_length > history_entry->capacity - 1) {
+    // resize to multiple of `LINE_MAX`
+    int new_capacity = str_length + 1;
+    if (new_capacity % LINE_MAX != 0) {
+      new_capacity += LINE_MAX - (new_capacity % LINE_MAX);
+    }
+
+    char *ptr = (char *)realloc(history_entry->str, new_capacity);
+    if (ptr == NULL) {
+      fprintf(stderr, "xd_readline: failed to allocate memory: %s\n",
+              strerror(errno));
+      return -1;
+    }
+    history_entry->capacity = new_capacity;
+    history_entry->str = ptr;
+  }
+
+  // add to history
+  if (xd_history_length < XD_HISTORY_MAX) {
+    xd_history_length++;
+  }
+  else {
+    // circular buffer is full, overwrite the oldest entry
+    xd_history_start_idx = (xd_history_start_idx + 1) % XD_HISTORY_MAX;
+  }
+  xd_history_end_idx = new_end_idx;
+  memcpy(history_entry->str, str, str_length);
+  history_entry->str[str_length] = XD_ASCII_NUL;
+  history_entry->length = str_length;
+
+  return 0;
+}  // xd_readline_history_add()

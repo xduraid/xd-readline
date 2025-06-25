@@ -24,6 +24,7 @@ int main() {
   char *line = NULL;
   while ((line = xd_readline()) != NULL) {
     printf("Read: %s---------------------\n", line);
+    xd_readline_history_add(line);
     if (strcmp(line, "history -c\n") == 0) {
       xd_readline_history_clear();
     }
