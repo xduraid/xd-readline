@@ -54,4 +54,9 @@ void xd_readline_history_clear();
  */
 int xd_readline_history_add(const char *str);
 
+/**
+ * @brief Prints all history entries to the screen.
+ */
+void xd_readline_history_print();
+
 #endif  // XD_READLINE_H

@@ -1223,3 +1223,11 @@ int xd_readline_history_add(const char *str) {
 
   return 0;
 }  // xd_readline_history_add()
+
+void xd_readline_history_print() {
+  int idx = xd_history_start_idx;
+  for (int i = 0; i < xd_history_length; i++) {
+    printf("    %d  %s\n", i + 1, xd_history[idx]->str);
+    idx = (idx + 1) % XD_HISTORY_MAX;
+  }
+}  // xd_readline_history_print()
