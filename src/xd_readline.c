@@ -57,13 +57,16 @@
 
 // ANSI escape sequences for keyboard shortcuts
 
-#define XD_ANSI_UP_ARROW    "\033[A"   // ANSI for `Up Arrow` key
-#define XD_ANSI_DOWN_ARROW  "\033[B"   // ANSI for `Down Arrow` key
-#define XD_ANSI_RIGHT_ARROW "\033[C"   // ANSI for `Right Arrow` key
-#define XD_ANSI_LEFT_ARROW  "\033[D"   // ANSI for `Left Arrow` key
-#define XD_ANSI_HOME        "\033[H"   // ANSI for `Home` key
-#define XD_ANSI_END         "\033[F"   // ANSI for `End` key
-#define XD_ANSI_DELETE      "\033[3~"  // ANSI for `Delete` key
+#define XD_ANSI_UP_ARROW    "\033[A"  // ANSI for `Up Arrow` key
+#define XD_ANSI_DOWN_ARROW  "\033[B"  // ANSI for `Down Arrow` key
+#define XD_ANSI_RIGHT_ARROW "\033[C"  // ANSI for `Right Arrow` key
+#define XD_ANSI_LEFT_ARROW  "\033[D"  // ANSI for `Left Arrow` key
+
+#define XD_ANSI_PAGE_UP   "\033[5~"  // ANSI for `Page Up` key
+#define XD_ANSI_PAGE_DOWN "\033[6~"  // ANSI for `Page Down` key
+#define XD_ANSI_HOME      "\033[H"   // ANSI for `Home` key
+#define XD_ANSI_END       "\033[F"   // ANSI for `End` key
+#define XD_ANSI_DELETE    "\033[3~"  // ANSI for `Delete` key
 
 #define XD_ANSI_ALT_F "\033f"  // ANSI for `ALT+F` key binding
 #define XD_ANSI_ALT_B "\033b"  // ANSI for `ALT+B` key binding
@@ -168,6 +171,8 @@ static void xd_input_handle_down_arrow();
 static void xd_input_handle_right_arrow();
 static void xd_input_handle_left_arrow();
 
+static void xd_input_handle_page_up();
+static void xd_input_handle_page_down();
 static void xd_input_handle_home();
 static void xd_input_handle_end();
 static void xd_input_handle_delete();
@@ -301,6 +306,8 @@ static const xd_esc_seq_binding_t xd_esc_seq_bindings[] = {
     {XD_ANSI_DOWN_ARROW,  xd_input_handle_down_arrow      },
     {XD_ANSI_RIGHT_ARROW, xd_input_handle_right_arrow     },
     {XD_ANSI_LEFT_ARROW,  xd_input_handle_left_arrow      },
+    {XD_ANSI_PAGE_UP,     xd_input_handle_page_up         },
+    {XD_ANSI_PAGE_DOWN,   xd_input_handle_page_down       },
     {XD_ANSI_HOME,        xd_input_handle_home            },
     {XD_ANSI_END,         xd_input_handle_end             },
     {XD_ANSI_DELETE,      xd_input_handle_delete          },
@@ -981,6 +988,20 @@ static void xd_input_handle_right_arrow() {
 static void xd_input_handle_left_arrow() {
   xd_input_handle_ctrl_b();
 }  // xd_input_handle_left_arrow()
+
+/**
+ * @brief Handles the case where the input is the `Page Up` key.
+ */
+static void xd_input_handle_page_up() {
+  xd_input_handle_up_arrow();
+}  // xd_input_handle_page_up()
+
+/**
+ * @brief Handles the case where the input is the `Page Down` key.
+ */
+static void xd_input_handle_page_down() {
+  xd_input_handle_down_arrow();
+}  // xd_input_handle_page_down()
 
 /**
  * @brief Handles the case where the input is the `Home` key.
