@@ -17,6 +17,11 @@
 #define XD_READLINE_H
 
 /**
+ * @brief Maximum number of history entries.
+ */
+#define XD_HISTORY_MAX (4)
+
+/**
  * @brief Prompt string displayed at the beginning of each input line.
  *
  * Used to change the prompt displayed by `xd_readline()` before reading input.
@@ -32,5 +37,10 @@ extern const char *xd_readline_prompt;
  * on `EOF`.
  */
 char *xd_readline();
+
+/**
+ * @brief Clears the history.
+ */
+void xd_readline_history_clear();
 
 #endif  // XD_READLINE_H

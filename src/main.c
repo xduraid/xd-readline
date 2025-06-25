@@ -24,7 +24,10 @@ int main() {
   char *line = NULL;
   while ((line = xd_readline()) != NULL) {
     printf("Read: %s---------------------\n", line);
-    if (strcmp(line, "exit\n") == 0) {
+    if (strcmp(line, "history -c\n") == 0) {
+      xd_readline_history_clear();
+    }
+    else if (strcmp(line, "exit\n") == 0) {
       break;
     }
   }

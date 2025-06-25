@@ -99,12 +99,24 @@ typedef struct xd_esc_seq_binding_t {
   const xd_input_handler_func handler;  // The handler function.
 } xd_esc_seq_binding_t;
 
+/**
+ * @brief Represents a history entry.
+ */
+typedef struct xd_history_entry_t {
+  char *str;     // The history string.
+  int capacity;  // The capacity of the history string.
+  int length;    // The length of the history string.
+} xd_history_entry_t;
+
 // ========================
 // Function Declarations
 // ========================
 
 static void xd_readline_init() __attribute__((constructor));
 static void xd_readline_destroy() __attribute__((destructor));
+
+static void xd_readline_history_init();
+static void xd_readline_history_destroy();
 
 static void xd_input_buffer_insert(char chr);
 static void xd_input_buffer_remove_before_cursor(int n);
@@ -249,6 +261,31 @@ static char *xd_readline_return = NULL;
 static int xd_readline_prompt_length = 0;
 
 /**
+ * @brief The history array (circular buffer)
+ */
+static xd_history_entry_t **xd_history = NULL;
+
+/**
+ * @brief Index of the current history entry.
+ */
+static int xd_history_nav_idx = XD_HISTORY_MAX;
+
+/**
+ * @brief Index of the first history entry.
+ */
+static int xd_history_start_idx = 0;
+
+/**
+ * @brief Index of the last history entry.
+ */
+static int xd_history_end_idx = XD_HISTORY_MAX - 1;
+
+/**
+ * @brief The number of entries currently stored in history.
+ */
+static int xd_history_length = 0;
+
+/**
  * @brief Array mapping ANSI escape sequences to corresponding input
  * handlers.
  */
@@ -300,6 +337,9 @@ static void xd_readline_init() {
     exit(EXIT_FAILURE);
   }
 
+  // initialize the history
+  xd_readline_history_init();
+
   // initialize input buffer
   xd_input_buffer = (char *)malloc(sizeof(char) * xd_input_capacity);
   if (xd_input_buffer == NULL) {
@@ -324,8 +364,61 @@ static void xd_readline_init() {
  * library.
  */
 static void xd_readline_destroy() {
+  xd_readline_history_destroy();
   free(xd_input_buffer);
 }  // xd_readline_destroy()
+
+/**
+ * @brief Initialize the history array by allocating all needed memory up-front
+ * to reduce the allocation-deallocation overhead.
+ *
+ * @note This function must be called first thing inside the constructor
+ * `xd_readline_init()` beacuse it calls `exit()` on failure.
+ */
+static void xd_readline_history_init() {
+  xd_history = (xd_history_entry_t **)malloc(sizeof(xd_history_entry_t *) *
+                                             (XD_HISTORY_MAX + 1));
+  if (xd_history == NULL) {
+    fprintf(stderr, "xd_readline: failed to allocate memory: %s\n",
+            strerror(errno));
+    exit(EXIT_FAILURE);
+  }
+
+  for (int i = 0; i <= XD_HISTORY_MAX; i++) {
+    xd_history[i] = (xd_history_entry_t *)malloc(sizeof(xd_history_entry_t));
+    if (xd_history[i] == NULL) {
+      fprintf(stderr, "xd_readline: failed to allocate memory: %s\n",
+              strerror(errno));
+      exit(EXIT_FAILURE);
+    }
+
+    xd_history[i]->capacity = LINE_MAX;
+    xd_history[i]->length = 0;
+    xd_history[i]->str = (char *)malloc(sizeof(char) * LINE_MAX);
+    if (xd_history[i]->str == NULL) {
+      free(xd_history[i]);
+      xd_history[i] = NULL;
+      fprintf(stderr, "xd_readline: failed to allocate memory: %s\n",
+              strerror(errno));
+      exit(EXIT_FAILURE);
+    }
+    xd_history[i]->str[0] = XD_ASCII_NUL;
+  }
+}  // xd_readline_history_init()
+
+/**
+ * @brief Frees the resources used for the history.
+ */
+static void xd_readline_history_destroy() {
+  for (int i = 0; i <= XD_HISTORY_MAX; i++) {
+    if (xd_history[i] == NULL) {
+      break;
+    }
+    free(xd_history[i]->str);
+    free(xd_history[i]);
+  }
+  free((void *)xd_history);
+}  // xd_readline_history_destroy()
 
 /**
  * @brief Inserts the passed character into the input buffer at the cursor
@@ -1071,3 +1164,14 @@ char *xd_readline() {
   xd_tty_restore();
   return xd_readline_return;
 }  // xd_readline()
+
+void xd_readline_history_clear() {
+  for (int i = 0; i <= XD_HISTORY_MAX; i++) {
+    xd_history[i]->length = 0;
+    xd_history[i]->str[0] = XD_ASCII_NUL;
+  }
+  xd_history_nav_idx = XD_HISTORY_MAX;
+  xd_history_start_idx = 0;
+  xd_history_end_idx = XD_HISTORY_MAX - 1;
+  xd_history_length = 0;
+}  // xd_readline_history_clear()
