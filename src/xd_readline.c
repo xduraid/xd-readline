@@ -74,6 +74,8 @@
 
 #define XD_ANSI_ALT_BS "\033\177"  // ANSI for `ALT+Backspace` key binding
 
+#define XD_ANSI_CTRL_UARROW "\033[1;5A"  // ANSI for `Ctrl+Up Arrow` binding
+#define XD_ANSI_CTRL_DARROW "\033[1;5B"  // ANSI for `Ctrl+Down Arrow` binding
 #define XD_ANSI_CTRL_RARROW "\033[1;5C"  // ANSI for `Ctrl+Right Arrow` binding
 #define XD_ANSI_CTRL_LARROW "\033[1;5D"  // ANSI for `Ctrl+Left Arrow` binding
 #define XD_ANSI_CTRL_DELETE "\033[3;5~"  // ANSI for `Ctrl+Delete` binding
@@ -177,6 +179,8 @@ static void xd_input_handle_home();
 static void xd_input_handle_end();
 static void xd_input_handle_delete();
 
+static void xd_input_handler_ctrl_up_arrow();
+static void xd_input_handler_ctrl_down_arrow();
 static void xd_input_handle_ctrl_right_arrow();
 static void xd_input_handle_ctrl_left_arrow();
 static void xd_input_handle_ctrl_delete();
@@ -315,6 +319,8 @@ static const xd_esc_seq_binding_t xd_esc_seq_bindings[] = {
     {XD_ANSI_ALT_B,       xd_input_handle_alt_b           },
     {XD_ANSI_ALT_D,       xd_input_handle_alt_d           },
     {XD_ANSI_ALT_BS,      xd_input_handle_alt_backspace   },
+    {XD_ANSI_CTRL_UARROW, xd_input_handler_ctrl_up_arrow  },
+    {XD_ANSI_CTRL_DARROW, xd_input_handler_ctrl_down_arrow},
     {XD_ANSI_CTRL_RARROW, xd_input_handle_ctrl_right_arrow},
     {XD_ANSI_CTRL_LARROW, xd_input_handle_ctrl_left_arrow },
     {XD_ANSI_CTRL_DELETE, xd_input_handle_ctrl_delete     },
@@ -1028,6 +1034,36 @@ static void xd_input_handle_delete() {
   xd_input_buffer_remove_from_cursor(1);
   xd_readline_redraw = 1;
 }  // xd_input_handle_delete()
+
+/**
+ * @brief Handles the case where the input is `Ctrl+Up Arrow`.
+ */
+static void xd_input_handler_ctrl_up_arrow() {
+  if (xd_history_length == 0 || xd_history_nav_idx == xd_history_start_idx) {
+    xd_tty_bell();
+    return;
+  }
+
+  xd_input_buffer_save_to_history();
+  xd_history_nav_idx = xd_history_start_idx;
+  xd_input_buffer_load_from_history();
+  xd_readline_redraw = 1;
+}  // xd_input_handler_ctrl_up_arrow()
+
+/**
+ * @brief Handles the case where the input is `Ctrl+Down Arrow`.
+ */
+static void xd_input_handler_ctrl_down_arrow() {
+  if (xd_history_length == 0 || xd_history_nav_idx == XD_HISTORY_MAX) {
+    xd_tty_bell();
+    return;
+  }
+
+  xd_input_buffer_save_to_history();
+  xd_history_nav_idx = XD_HISTORY_MAX;
+  xd_input_buffer_load_from_history();
+  xd_readline_redraw = 1;
+}  // xd_input_handler_ctrl_down_arrow()
 
 /**
  * @brief Handles the case where the input is `Ctrl+Right Arrow`.
