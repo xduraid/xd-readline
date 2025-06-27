@@ -19,21 +19,34 @@
 
 #include "xd_readline.h"
 
+void xd_history_expansion(const char *line) {
+  int num = atoi(line + 1);
+  char *entry = xd_readline_history_get(num);
+  if (entry != NULL) {
+    printf("Expansion: %s\n---------------------\n", entry);
+    free(entry);
+  }
+}  // history_expansion()
+
 int main() {
   xd_readline_prompt = "xd-rl> ";
   char *line = NULL;
   while ((line = xd_readline()) != NULL) {
     printf("Read: %s---------------------\n", line);
-    xd_readline_history_add(line);
     if (strcmp(line, "history\n") == 0) {
       xd_readline_history_print();
     }
     else if (strcmp(line, "history -c\n") == 0) {
       xd_readline_history_clear();
     }
+    else if (line[0] == '!') {
+      xd_history_expansion(line);
+      continue;
+    }
     else if (strcmp(line, "exit\n") == 0) {
       break;
     }
+    xd_readline_history_add(line);
   }
   exit(EXIT_SUCCESS);
 }  // main()

@@ -55,6 +55,24 @@ void xd_readline_history_clear();
 int xd_readline_history_add(const char *str);
 
 /**
+ * @brief Retrieves a copy of the n-th entry from the history.
+ *
+ * If the passed integer is non-negative, the function returns the (n)-th entry
+ * starting from the beginning of the history (i.e., 1 refers to the first
+ * entry).
+ *
+ * If the passed integer is negative, the function returns the (-n)-th entry
+ * starting from the end of the history (i.e., -1 refers to the last
+ * entry).
+ *
+ * @param n The number of the history entry to be returned.
+ *
+ * @return A newly allocated string containing the requested history entry, or
+ * `NULL` if the index is out of bounds or on memory allocation failure.
+ */
+char *xd_readline_history_get(int n);
+
+/**
  * @brief Prints all history entries to the screen.
  */
 void xd_readline_history_print();

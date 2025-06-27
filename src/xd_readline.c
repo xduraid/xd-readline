@@ -1412,6 +1412,32 @@ int xd_readline_history_add(const char *str) {
   return 0;
 }  // xd_readline_history_add()
 
+char *xd_readline_history_get(int n) {
+  if (n == 0 || xd_history_length == 0) {
+    return NULL;
+  }
+
+  int idx = 0;
+  if (n > 0) {
+    idx = (xd_history_start_idx + n - 1) % XD_HISTORY_MAX;
+  }
+  else {
+    n = -n;
+    idx = (xd_history_end_idx - n + 1 + XD_HISTORY_MAX) % XD_HISTORY_MAX;
+  }
+
+  if (n > xd_history_length) {
+    return NULL;
+  }
+
+  char *ptr = strdup(xd_history[idx]->str);
+  if (ptr == NULL) {
+    fprintf(stderr, "xd_readline: failed to allocate memory: %s\n",
+            strerror(errno));
+  }
+  return ptr;
+}  // xd_readline_history_get()
+
 void xd_readline_history_print() {
   int idx = xd_history_start_idx;
   for (int i = 0; i < xd_history_length; i++) {
