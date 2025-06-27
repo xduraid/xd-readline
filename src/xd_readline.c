@@ -78,7 +78,10 @@
 #define XD_ANSI_CTRL_DARROW "\033[1;5B"  // ANSI for `Ctrl+Down Arrow` binding
 #define XD_ANSI_CTRL_RARROW "\033[1;5C"  // ANSI for `Ctrl+Right Arrow` binding
 #define XD_ANSI_CTRL_LARROW "\033[1;5D"  // ANSI for `Ctrl+Left Arrow` binding
-#define XD_ANSI_CTRL_DELETE "\033[3;5~"  // ANSI for `Ctrl+Delete` binding
+
+#define XD_ANSII_CTRL_PAGE_UP "\033[5;5~"  //  ANSI for `Ctrl+Page Up` binding
+#define XD_ANSII_CTRL_PAGE_DN "\033[6;5~"  //  ANSI for `Ctrl+Page Down` binding
+#define XD_ANSI_CTRL_DELETE   "\033[3;5~"  // ANSI for `Ctrl+Delete` binding
 
 // ANSI sequences' formats
 
@@ -183,6 +186,9 @@ static void xd_input_handler_ctrl_up_arrow();
 static void xd_input_handler_ctrl_down_arrow();
 static void xd_input_handle_ctrl_right_arrow();
 static void xd_input_handle_ctrl_left_arrow();
+
+static void xd_input_handler_ctrl_page_up();
+static void xd_input_handler_ctrl_page_down();
 static void xd_input_handle_ctrl_delete();
 
 static void xd_input_handle_alt_f();
@@ -306,24 +312,26 @@ static int xd_history_length = 0;
  * handlers.
  */
 static const xd_esc_seq_binding_t xd_esc_seq_bindings[] = {
-    {XD_ANSI_UP_ARROW,    xd_input_handle_up_arrow        },
-    {XD_ANSI_DOWN_ARROW,  xd_input_handle_down_arrow      },
-    {XD_ANSI_RIGHT_ARROW, xd_input_handle_right_arrow     },
-    {XD_ANSI_LEFT_ARROW,  xd_input_handle_left_arrow      },
-    {XD_ANSI_PAGE_UP,     xd_input_handle_page_up         },
-    {XD_ANSI_PAGE_DOWN,   xd_input_handle_page_down       },
-    {XD_ANSI_HOME,        xd_input_handle_home            },
-    {XD_ANSI_END,         xd_input_handle_end             },
-    {XD_ANSI_DELETE,      xd_input_handle_delete          },
-    {XD_ANSI_ALT_F,       xd_input_handle_alt_f           },
-    {XD_ANSI_ALT_B,       xd_input_handle_alt_b           },
-    {XD_ANSI_ALT_D,       xd_input_handle_alt_d           },
-    {XD_ANSI_ALT_BS,      xd_input_handle_alt_backspace   },
-    {XD_ANSI_CTRL_UARROW, xd_input_handler_ctrl_up_arrow  },
-    {XD_ANSI_CTRL_DARROW, xd_input_handler_ctrl_down_arrow},
-    {XD_ANSI_CTRL_RARROW, xd_input_handle_ctrl_right_arrow},
-    {XD_ANSI_CTRL_LARROW, xd_input_handle_ctrl_left_arrow },
-    {XD_ANSI_CTRL_DELETE, xd_input_handle_ctrl_delete     },
+    {XD_ANSI_UP_ARROW,      xd_input_handle_up_arrow        },
+    {XD_ANSI_DOWN_ARROW,    xd_input_handle_down_arrow      },
+    {XD_ANSI_RIGHT_ARROW,   xd_input_handle_right_arrow     },
+    {XD_ANSI_LEFT_ARROW,    xd_input_handle_left_arrow      },
+    {XD_ANSI_PAGE_UP,       xd_input_handle_page_up         },
+    {XD_ANSI_PAGE_DOWN,     xd_input_handle_page_down       },
+    {XD_ANSI_HOME,          xd_input_handle_home            },
+    {XD_ANSI_END,           xd_input_handle_end             },
+    {XD_ANSI_DELETE,        xd_input_handle_delete          },
+    {XD_ANSI_ALT_F,         xd_input_handle_alt_f           },
+    {XD_ANSI_ALT_B,         xd_input_handle_alt_b           },
+    {XD_ANSI_ALT_D,         xd_input_handle_alt_d           },
+    {XD_ANSI_ALT_BS,        xd_input_handle_alt_backspace   },
+    {XD_ANSI_CTRL_UARROW,   xd_input_handler_ctrl_up_arrow  },
+    {XD_ANSI_CTRL_DARROW,   xd_input_handler_ctrl_down_arrow},
+    {XD_ANSI_CTRL_RARROW,   xd_input_handle_ctrl_right_arrow},
+    {XD_ANSI_CTRL_LARROW,   xd_input_handle_ctrl_left_arrow },
+    {XD_ANSII_CTRL_PAGE_UP, xd_input_handler_ctrl_page_up   },
+    {XD_ANSII_CTRL_PAGE_DN, xd_input_handler_ctrl_page_down },
+    {XD_ANSI_CTRL_DELETE,   xd_input_handle_ctrl_delete     },
 };
 
 /**
@@ -1078,6 +1086,20 @@ static void xd_input_handle_ctrl_right_arrow() {
 static void xd_input_handle_ctrl_left_arrow() {
   xd_input_handle_alt_b();
 }  // xd_input_handle_ctrl_left_arrow()
+
+/**
+ * @brief Handles the case where the input is `Ctrl+Page Up`.
+ */
+static void xd_input_handler_ctrl_page_up() {
+  xd_input_handler_ctrl_up_arrow();
+}  // xd_input_handler_ctrl_page_up()
+
+/**
+ * @brief Handles the case where the input is `Ctrl+Page Down`.
+ */
+static void xd_input_handler_ctrl_page_down() {
+  xd_input_handler_ctrl_down_arrow();
+}  // xd_input_handler_ctrl_page_down()
 
 /**
  * @brief Handles the case where the input is `Ctrl+Delete`.
