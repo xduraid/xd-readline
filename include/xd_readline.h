@@ -77,4 +77,24 @@ char *xd_readline_history_get(int n);
  */
 void xd_readline_history_print();
 
+/**
+ * @brief Writes the history to a file.
+ *
+ * @param path The path of the file to write the history to.
+ * @param append Whether to append to the file (non-zero) or overwrite it
+ * (zero).
+ *
+ * @return `0` on success `-1` on failure.
+ */
+int xd_readline_history_save_to_file(const char *path, int append);
+
+/**
+ * @brief Loads the history from a file.
+ *
+ * @param path The path of the file to read the history from.
+ *
+ * @return `0` on success `-1` on failure.
+ */
+int xd_readline_history_load_from_file(const char *path);
+
 #endif  // XD_READLINE_H

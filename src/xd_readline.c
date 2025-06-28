@@ -1445,3 +1445,33 @@ void xd_readline_history_print() {
     idx = (idx + 1) % XD_HISTORY_MAX;
   }
 }  // xd_readline_history_print()
+
+int xd_readline_history_save_to_file(const char *path, int append) {
+  const char *open_mode = append == 0 ? "w" : "a";
+  FILE *file = fopen(path, open_mode);
+  if (file == NULL) {
+    return -1;
+  }
+  int idx = xd_history_start_idx;
+  for (int i = 0; i < xd_history_length; i++) {
+    fprintf(file, "%s\n", xd_history[idx]->str);
+    idx = (idx + 1) % XD_HISTORY_MAX;
+  }
+  fclose(file);
+  return 0;
+}  // xd_readline_history_save_to_file()
+
+int xd_readline_history_load_from_file(const char *path) {
+  FILE *file = fopen(path, "r");
+  if (file == NULL) {
+    return -1;
+  }
+  char *line = NULL;
+  size_t size = 0;
+  while (getline(&line, &size, file) != -1) {
+    xd_readline_history_add(line);
+  }
+  free(line);
+  fclose(file);
+  return 0;
+}  // xd_readline_history_load_from_file()

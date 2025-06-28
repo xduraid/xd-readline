@@ -38,6 +38,16 @@ int main() {
     }
     else if (strcmp(line, "history -c\n") == 0) {
       xd_readline_history_clear();
+      continue;
+    }
+    else if (strcmp(line, "history -r\n") == 0) {
+      xd_readline_history_load_from_file("xd.history");
+    }
+    else if (strcmp(line, "history -w\n") == 0) {
+      xd_readline_history_save_to_file("xd.history", 0);
+    }
+    else if (strcmp(line, "history -a\n") == 0) {
+      xd_readline_history_save_to_file("xd.history", 1);
     }
     else if (line[0] == '!') {
       xd_history_expansion(line);
