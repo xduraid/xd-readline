@@ -38,6 +38,11 @@
  */
 #define XD_SMALL_BUFFER_SIZE (32)
 
+/**
+ * @brief Maximum length of history search query, including null-terminator.
+ */
+#define XD_SEARCH_QUERY_MAX LINE_MAX
+
 // ASCII control characters
 
 #define XD_ASCII_NUL (0)    // ASCII for `NUL`
@@ -51,6 +56,7 @@
 #define XD_ASCII_LF  (10)   // ASCII for `LF` (`Enter`)
 #define XD_ASCII_VT  (11)   // ASCII for `VT` (`Ctrl+K`)
 #define XD_ASCII_FF  (12)   // ASCII for `FF` (`Ctrl+L`)
+#define XD_ASCII_DC2 (18)   // ASCII for `DC2` (`Ctrl+R`)
 #define XD_ASCII_NAK (21)   // ASCII for `NAK` (`Ctrl+U`)
 #define XD_ASCII_ESC (27)   // ASCII for `ESC` (`Esc`)
 #define XD_ASCII_DEL (127)  // ASCII for `DEL` (`Backspace`)
@@ -118,6 +124,15 @@ typedef struct xd_history_entry_t {
   int length;    // The length of the history string.
 } xd_history_entry_t;
 
+/**
+ * @brief Represents the running mode of `xd_readline`.
+ */
+typedef enum xd_readline_mode_t {
+  XD_READLINE_NORMAL,
+  XD_READLINE_REVERSE_SEARCH,
+  XD_READLINE_FORWARD_SEARCH,
+} xd_readline_mode_t;
+
 // ========================
 // Function Declarations
 // ========================
@@ -166,6 +181,7 @@ static void xd_input_handle_ctrl_g();
 static void xd_input_handle_ctrl_h();
 static void xd_input_handle_ctrl_k();
 static void xd_input_handle_ctrl_l();
+static void xd_input_handle_ctrl_r();
 static void xd_input_handle_ctrl_u();
 
 static void xd_input_handle_backspace();
@@ -308,6 +324,31 @@ static int xd_history_end_idx = XD_HISTORY_MAX - 1;
 static int xd_history_length = 0;
 
 /**
+ * @brief The current running mode of `xd_readline`.
+ */
+static xd_readline_mode_t xd_readline_mode = XD_READLINE_NORMAL;
+
+/**
+ * @brief History search prompt.
+ */
+static const char *xd_search_prompt = "";
+
+/**
+ * @brief Length of the history search prompt.
+ */
+static int xd_search_prompt_length = 0;
+
+/**
+ * @brief History search query.
+ */
+static char *xd_search_query_buffer = NULL;
+
+/**
+ * @brief History search query length.
+ */
+static int xd_search_query_length = 0;
+
+/**
  * @brief Array mapping ANSI escape sequences to corresponding input
  * handlers.
  */
@@ -380,6 +421,16 @@ static void xd_readline_init() {
   xd_input_length = 0;
   xd_input_buffer[0] = XD_ASCII_NUL;
 
+  // initialize search query buffer
+  xd_search_query_buffer = (char *)malloc(sizeof(char) * XD_SEARCH_QUERY_MAX);
+  if (xd_search_query_buffer == NULL) {
+    fprintf(stderr, "xd_readline: failed to allocate memory: %s\n",
+            strerror(errno));
+    exit(EXIT_FAILURE);
+  }
+  xd_search_query_length = 0;
+  xd_search_query_buffer[0] = XD_ASCII_NUL;
+
   // get terminal window width
   struct winsize wsz;
   if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsz) == -1) {
@@ -396,6 +447,7 @@ static void xd_readline_init() {
 static void xd_readline_destroy() {
   xd_readline_history_destroy();
   free(xd_input_buffer);
+  free(xd_search_query_buffer);
 }  // xd_readline_destroy()
 
 /**
@@ -670,8 +722,18 @@ static void xd_tty_input_clear() {
  */
 static void xd_tty_input_redraw() {
   xd_tty_input_clear();
-  xd_tty_write_track(xd_readline_prompt, xd_readline_prompt_length);
-  xd_tty_write_track(xd_input_buffer, xd_input_length);
+  if (xd_readline_mode == XD_READLINE_NORMAL) {
+    xd_tty_write_track(xd_readline_prompt, xd_readline_prompt_length);
+    xd_tty_write_track(xd_input_buffer, xd_input_length);
+  }
+  else {
+    // search mode
+    xd_tty_write_track(xd_search_prompt, xd_search_prompt_length);
+    xd_tty_write_track("'", 1);
+    xd_tty_write_track(xd_search_query_buffer, xd_search_query_length);
+    xd_tty_write_track("': ", 3);
+    xd_tty_write_track(xd_input_buffer, xd_input_length);
+  }
   xd_tty_cursor_move_left_wrap(xd_input_length - xd_input_cursor);
 }  // xd_tty_input_redraw()
 
@@ -810,13 +872,21 @@ static inline void xd_tty_cursor_move_right_wrap(int n) {
  * @param chr the input character.
  */
 static void xd_input_handle_printable(char chr) {
-  xd_input_buffer_insert(chr);
-  if (xd_input_cursor == xd_input_length) {
-    xd_tty_write_track(&chr, 1);
-    // don't redraw when adding to the end
-    return;
+  if (xd_readline_mode == XD_READLINE_NORMAL) {
+    xd_input_buffer_insert(chr);
+    if (xd_input_cursor == xd_input_length) {
+      xd_tty_write_track(&chr, 1);
+      // don't redraw when adding to the end
+      return;
+    }
+    xd_readline_redraw = 1;
   }
-  xd_readline_redraw = 1;
+  else if (xd_search_query_length < XD_SEARCH_QUERY_MAX - 1) {
+    // search mode
+    xd_search_query_buffer[xd_search_query_length++] = chr;
+    xd_search_query_buffer[xd_search_query_length] = XD_ASCII_NUL;
+    xd_readline_redraw = 1;
+  }
 }  // xd_input_handle_printable()
 
 /**
@@ -888,11 +958,17 @@ static void xd_input_handle_ctrl_g() {
  * @brief Handles the case where the input is `Ctrl+H`.
  */
 static void xd_input_handle_ctrl_h() {
-  if (xd_input_cursor == 0) {
-    xd_tty_bell();
-    return;
+  if (xd_readline_mode == XD_READLINE_NORMAL) {
+    if (xd_input_cursor == 0) {
+      xd_tty_bell();
+      return;
+    }
+    xd_input_buffer_remove_before_cursor(1);
   }
-  xd_input_buffer_remove_before_cursor(1);
+  else if (xd_search_query_length > 0) {
+    // search mode
+    xd_search_query_buffer[--xd_search_query_length] = XD_ASCII_NUL;
+  }
   xd_readline_redraw = 1;
 }  // xd_input_handle_ctrl_h()
 
@@ -918,6 +994,19 @@ static void xd_input_handle_ctrl_l() {
   xd_tty_cursor_col = 1;
   xd_readline_redraw = 1;
 }  // xd_input_handle_ctrl_l()
+
+/**
+ * @brief Handles the case where the input is `Ctrl+R`.
+ */
+static void xd_input_handle_ctrl_r() {
+  xd_input_buffer_save_to_history();
+  xd_search_prompt = "(reverse-i-search)";
+  xd_search_prompt_length = (int)strlen(xd_search_prompt);
+  xd_search_query_length = 0;
+  xd_search_query_buffer[0] = XD_ASCII_NUL;
+  xd_readline_mode = XD_READLINE_REVERSE_SEARCH;
+  xd_readline_redraw = 1;
+}  // xd_input_handle_ctrl_r()
 
 /**
  * @brief Handles the case where the input is `Ctrl+L`.
@@ -1238,6 +1327,9 @@ static void xd_input_handle_control(char chr) {
     case XD_ASCII_FF:
       xd_input_handle_ctrl_l();
       break;
+    case XD_ASCII_DC2:
+      xd_input_handle_ctrl_r();
+      break;
     case XD_ASCII_NAK:
       xd_input_handle_ctrl_u();
       break;
@@ -1284,6 +1376,8 @@ char *xd_readline() {
   if (xd_readline_prompt != NULL) {
     xd_readline_prompt_length = (int)strlen(xd_readline_prompt);
   }
+
+  xd_readline_mode = XD_READLINE_NORMAL;
 
   xd_input_cursor = 0;
   xd_input_length = 0;
