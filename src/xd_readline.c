@@ -591,6 +591,7 @@ static void xd_input_buffer_remove_before_cursor(int n) {
   }
   xd_input_cursor -= n;
   xd_input_length -= n;
+  xd_input_buffer[xd_input_length] = XD_ASCII_NUL;
 }  // xd_input_buffer_remove_before_cursor()
 
 /**
@@ -609,6 +610,7 @@ static void xd_input_buffer_remove_from_cursor(int n) {
     xd_input_buffer[i] = xd_input_buffer[i + n];
   }
   xd_input_length -= n;
+  xd_input_buffer[xd_input_length] = XD_ASCII_NUL;
 }  // xd_input_buffer_remove_from_cursor()
 
 /**
