@@ -121,6 +121,9 @@
 #define XD_ANSI_LINE_CLR     "\033[2K\r"  // ANSI for clearing current line
 #define XD_ANSI_SCRN_CLR     "\033[2J"    // ANSI for clearing the screen
 
+#define XD_ANSI_TEXT_HIGHLIGHT "\033[30;107m"  // ANSI for text highlight
+#define XD_ANSI_TEXT_RESET     "\033[0m"       // ANSI for text restore
+
 // ========================
 // Typedefs
 // ========================
@@ -382,6 +385,11 @@ static int xd_search_original_nav_idx = 0;
  * @brief Input cursor before starting history search.
  */
 static int xd_search_original_input_cursor = 0;
+
+/**
+ * @brief Start position of search result (current input) highlight.
+ */
+static int xd_search_result_highlight_start = -1;
 
 /**
  * @brief Array mapping ANSI escape sequences to corresponding input
@@ -767,7 +775,21 @@ static void xd_tty_input_redraw() {
     xd_tty_write_track("'", 1);
     xd_tty_write_track(xd_search_query_buffer, xd_search_query_length);
     xd_tty_write_track("': ", 3);
-    xd_tty_write_track(xd_input_buffer, xd_input_length);
+    if (xd_search_result_highlight_start != -1) {
+      char *input_hstart = xd_input_buffer + xd_search_result_highlight_start;
+      char *input_hend = xd_input_buffer + xd_search_result_highlight_start +
+                         xd_search_query_length;
+      int after_hlength = xd_input_length - xd_search_result_highlight_start -
+                          xd_search_query_length;
+      xd_tty_write_track(xd_input_buffer, xd_search_result_highlight_start);
+      xd_tty_write_ansii_sequence(XD_ANSI_TEXT_HIGHLIGHT);
+      xd_tty_write_track(input_hstart, xd_search_query_length);
+      xd_tty_write_ansii_sequence(XD_ANSI_TEXT_RESET);
+      xd_tty_write_track(input_hend, after_hlength);
+    }
+    else {
+      xd_tty_write_track(xd_input_buffer, xd_input_length);
+    }
     if (strcmp(xd_search_prompt, XD_REVERSE_SEARCH_PROMPT_FAILED) == 0) {
       xd_tty_bell();
     }
@@ -1424,6 +1446,7 @@ static void xd_readline_history_reverse_search() {
   if (xd_search_query_length == 0 ||
       xd_search_idx == XD_SEARCH_IDX_OUT_OF_BOUNDS) {
     xd_search_prompt = XD_REVERSE_SEARCH_PROMPT_FAILED;
+    xd_search_result_highlight_start = -1;
     xd_readline_redraw = 1;
     return;
   }
@@ -1445,12 +1468,14 @@ static void xd_readline_history_reverse_search() {
 
   if (res == NULL) {
     xd_search_prompt = XD_REVERSE_SEARCH_PROMPT_FAILED;
+    xd_search_result_highlight_start = -1;
   }
   else {
     xd_history_nav_idx = xd_search_idx;
     xd_input_buffer_load_from_history();
     xd_search_prompt = XD_REVERSE_SERACH_PROMPT;
     xd_input_cursor = (int)(res - xd_history[xd_search_idx]->str);
+    xd_search_result_highlight_start = xd_input_cursor;
   }
   xd_readline_redraw = 1;
 }  // xd_readline_history_reverse_search()
