@@ -39,9 +39,32 @@
 #define XD_SMALL_BUFFER_SIZE (32)
 
 /**
+ * @brief The prompt for reverse history serach.
+ */
+#define XD_REVERSE_SERACH_PROMPT "(reverse-i-search)"
+
+/**
+ * @brief The prompt for failed reverse history serach.
+ */
+#define XD_REVERSE_SEARCH_PROMPT_FAILED "failed (reverse-i-search)"
+
+/**
  * @brief Maximum length of history search query, including null-terminator.
  */
 #define XD_SEARCH_QUERY_MAX LINE_MAX
+
+/**
+ * @brief Special value indicating that history search has started.
+ */
+#define XD_SEARCH_IDX_NEW (-1)
+
+/**
+ * @brief Special value indicating that history search index is out of bounds
+ * (i.e. `Ctrl+R` is pressed for the second time when navigation index is at
+ * first history entry or `Ctrl+S` is pressed for the second time when the
+ * navigation index is at the last history entry).
+ */
+#define XD_SEARCH_IDX_OUT_OF_BOUNDS (-2)
 
 // ASCII control characters
 
@@ -218,6 +241,8 @@ static void xd_input_handle_control(char chr);
 
 static void xd_input_handler(char chr);
 
+static void xd_readline_history_reverse_search();
+
 static void xd_sigwinch_handler(int sig_num);
 
 // ========================
@@ -334,11 +359,6 @@ static xd_readline_mode_t xd_readline_mode = XD_READLINE_NORMAL;
 static const char *xd_search_prompt = "";
 
 /**
- * @brief Length of the history search prompt.
- */
-static int xd_search_prompt_length = 0;
-
-/**
  * @brief History search query.
  */
 static char *xd_search_query_buffer = NULL;
@@ -347,6 +367,21 @@ static char *xd_search_query_buffer = NULL;
  * @brief History search query length.
  */
 static int xd_search_query_length = 0;
+
+/**
+ * @brief History index used while searching.
+ */
+static int xd_search_idx = XD_SEARCH_IDX_NEW;
+
+/**
+ * @brief History navigation index before starting history search.
+ */
+static int xd_search_original_nav_idx = 0;
+
+/**
+ * @brief Input cursor before starting history search.
+ */
+static int xd_search_original_input_cursor = 0;
 
 /**
  * @brief Array mapping ANSI escape sequences to corresponding input
@@ -728,11 +763,14 @@ static void xd_tty_input_redraw() {
   }
   else {
     // search mode
-    xd_tty_write_track(xd_search_prompt, xd_search_prompt_length);
+    xd_tty_write_track(xd_search_prompt, (int)strlen(xd_search_prompt));
     xd_tty_write_track("'", 1);
     xd_tty_write_track(xd_search_query_buffer, xd_search_query_length);
     xd_tty_write_track("': ", 3);
     xd_tty_write_track(xd_input_buffer, xd_input_length);
+    if (strcmp(xd_search_prompt, XD_REVERSE_SEARCH_PROMPT_FAILED) == 0) {
+      xd_tty_bell();
+    }
   }
   xd_tty_cursor_move_left_wrap(xd_input_length - xd_input_cursor);
 }  // xd_tty_input_redraw()
@@ -885,6 +923,7 @@ static void xd_input_handle_printable(char chr) {
     // search mode
     xd_search_query_buffer[xd_search_query_length++] = chr;
     xd_search_query_buffer[xd_search_query_length] = XD_ASCII_NUL;
+    xd_search_idx = xd_history_nav_idx;  // reset search index
     xd_readline_redraw = 1;
   }
 }  // xd_input_handle_printable()
@@ -968,6 +1007,7 @@ static void xd_input_handle_ctrl_h() {
   else if (xd_search_query_length > 0) {
     // search mode
     xd_search_query_buffer[--xd_search_query_length] = XD_ASCII_NUL;
+    xd_search_idx = xd_history_nav_idx;  // reset search index
   }
   xd_readline_redraw = 1;
 }  // xd_input_handle_ctrl_h()
@@ -999,12 +1039,27 @@ static void xd_input_handle_ctrl_l() {
  * @brief Handles the case where the input is `Ctrl+R`.
  */
 static void xd_input_handle_ctrl_r() {
+  if (xd_readline_mode == XD_READLINE_REVERSE_SEARCH) {
+    if (xd_history_nav_idx == xd_history_start_idx) {
+      xd_search_idx = XD_SEARCH_IDX_OUT_OF_BOUNDS;
+    }
+    else if (xd_search_idx == XD_HISTORY_MAX) {
+      xd_search_idx = xd_history_end_idx;
+    }
+    else {
+      xd_search_idx = (xd_search_idx - 1 + XD_HISTORY_MAX) % XD_HISTORY_MAX;
+    }
+    return;
+  }
+
   xd_input_buffer_save_to_history();
-  xd_search_prompt = "(reverse-i-search)";
-  xd_search_prompt_length = (int)strlen(xd_search_prompt);
+  xd_search_original_nav_idx = xd_history_nav_idx;
+  xd_search_original_input_cursor = xd_input_cursor;
+  xd_search_prompt = XD_REVERSE_SERACH_PROMPT;
   xd_search_query_length = 0;
   xd_search_query_buffer[0] = XD_ASCII_NUL;
   xd_readline_mode = XD_READLINE_REVERSE_SEARCH;
+  xd_search_idx = XD_SEARCH_IDX_NEW;
   xd_readline_redraw = 1;
 }  // xd_input_handle_ctrl_r()
 
@@ -1296,6 +1351,19 @@ static void xd_input_handle_escape_sequence() {
  * @param chr The input character.
  */
 static void xd_input_handle_control(char chr) {
+  if (xd_readline_mode != XD_READLINE_NORMAL) {
+    if (chr != XD_ASCII_BS && chr != XD_ASCII_DEL && chr != XD_ASCII_DC2) {
+      xd_readline_mode = XD_READLINE_NORMAL;
+      xd_readline_redraw = 1;
+      if (chr == XD_ASCII_BEL) {
+        // `Ctrl+G` restore original input before starting reverse search
+        xd_history_nav_idx = xd_search_original_nav_idx;
+        xd_input_buffer_load_from_history();
+        xd_input_cursor = xd_search_original_input_cursor;
+        return;
+      }
+    }
+  }
   switch (chr) {
     case XD_ASCII_SOH:
       xd_input_handle_ctrl_a();
@@ -1343,6 +1411,49 @@ static void xd_input_handle_control(char chr) {
       break;
   }
 }  // xd_input_handle_control()
+
+/**
+ * @brief Handles history reverse search.
+ */
+static void xd_readline_history_reverse_search() {
+  if (xd_search_idx == XD_SEARCH_IDX_NEW) {
+    xd_search_idx = xd_history_nav_idx;
+    return;
+  }
+
+  if (xd_search_query_length == 0 ||
+      xd_search_idx == XD_SEARCH_IDX_OUT_OF_BOUNDS) {
+    xd_search_prompt = XD_REVERSE_SEARCH_PROMPT_FAILED;
+    xd_readline_redraw = 1;
+    return;
+  }
+
+  int max_iterations = xd_history_length + 1;
+  const char *res = NULL;
+  for (int i = 0; i < max_iterations; i++) {
+    res = strstr(xd_history[xd_search_idx]->str, xd_search_query_buffer);
+    if (res != NULL || xd_search_idx == xd_history_start_idx) {
+      break;
+    }
+    if (xd_search_idx == XD_HISTORY_MAX) {
+      xd_search_idx = xd_history_end_idx;
+    }
+    else {
+      xd_search_idx = (xd_search_idx - 1 + XD_HISTORY_MAX) % XD_HISTORY_MAX;
+    }
+  }
+
+  if (res == NULL) {
+    xd_search_prompt = XD_REVERSE_SEARCH_PROMPT_FAILED;
+  }
+  else {
+    xd_history_nav_idx = xd_search_idx;
+    xd_input_buffer_load_from_history();
+    xd_search_prompt = XD_REVERSE_SERACH_PROMPT;
+    xd_input_cursor = (int)(res - xd_history[xd_search_idx]->str);
+  }
+  xd_readline_redraw = 1;
+}  // xd_readline_history_reverse_search()
 
 /**
  * @brief Handles a signle input character.
@@ -1436,6 +1547,10 @@ char *xd_readline() {
     }
 
     xd_input_handler(chr);
+
+    if (xd_readline_mode == XD_READLINE_REVERSE_SEARCH) {
+      xd_readline_history_reverse_search();
+    }
   }
 
   if (xd_tty_cursor_col != 1) {
