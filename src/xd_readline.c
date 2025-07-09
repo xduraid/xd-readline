@@ -86,6 +86,7 @@
 #define XD_ASCII_ACK (6)    // ASCII for `ACK` (`Ctrl+F`)
 #define XD_ASCII_BEL (7)    // ASCII for `BEL` (`Ctrl+G`)
 #define XD_ASCII_BS  (8)    // ASCII for `BS` (`Ctrl+H`)
+#define XD_ASCII_HT  (9)    // ASCII for `HT` (`Tab`)
 #define XD_ASCII_LF  (10)   // ASCII for `LF` (`Enter`)
 #define XD_ASCII_VT  (11)   // ASCII for `VT` (`Ctrl+K`)
 #define XD_ASCII_FF  (12)   // ASCII for `FF` (`Ctrl+L`)
@@ -174,6 +175,8 @@ typedef enum xd_readline_mode_t {
 // Function Declarations
 // ========================
 
+static char *xd_util_longest_common_prefix(const char **strings);
+
 static void xd_readline_init() __attribute__((constructor));
 static void xd_readline_destroy() __attribute__((destructor));
 
@@ -181,6 +184,7 @@ static void xd_readline_history_init();
 static void xd_readline_history_destroy();
 
 static void xd_input_buffer_insert(char chr);
+static void xd_input_buffer_insert_string(const char *str);
 static void xd_input_buffer_remove_before_cursor(int n);
 static void xd_input_buffer_remove_from_cursor(int n);
 
@@ -221,6 +225,8 @@ static void xd_input_handle_ctrl_l();
 static void xd_input_handle_ctrl_r();
 static void xd_input_handle_ctrl_s();
 static void xd_input_handle_ctrl_u();
+
+static void xd_input_handle_tab();
 
 static void xd_input_handle_backspace();
 static void xd_input_handle_enter();
@@ -441,11 +447,47 @@ static const int xd_esc_seq_bindings_length =
 // Public Variables
 // ========================
 
+xd_readline_completion_gen_func_t xd_readline_completions_generator = NULL;
+
 const char *xd_readline_prompt = NULL;
 
 // ========================
 // Function Definitions
 // ========================
+
+/**
+ * @brief Returns the longest common prefix of the passed array of strings.
+ *
+ * @param strings Sorted, null-terminated array of strings.
+ *
+ * @return Pointer to a newly allocated string containing the longest common
+ * prefix, or `NULL` if the passed array is `NULL` or empty or on allocation
+ * failure.
+ */
+static char *xd_util_longest_common_prefix(const char **strings) {
+  if (strings == NULL || strings[0] == NULL) {
+    return NULL;
+  }
+  const char *first_str = strings[0];
+  int lcp_length = 0;
+  int done = 0;
+  while (!done) {
+    char chr = first_str[lcp_length];
+    if (chr == XD_ASCII_NUL) {
+      break;
+    }
+    for (int i = 1; strings[i] != XD_ASCII_NUL; i++) {
+      if (strings[i][lcp_length] != chr) {
+        done = 1;
+        break;
+      }
+    }
+    if (!done) {
+      lcp_length++;
+    }
+  }
+  return lcp_length == 0 ? NULL : strndup(first_str, lcp_length);
+}  // xd_util_longest_common_prefix()
 
 /**
  * @brief Constructor, runs before main to initialize the `xd-readline`
@@ -565,6 +607,9 @@ static void xd_readline_history_destroy() {
  * @param chr The character to be inserted.
  */
 static void xd_input_buffer_insert(char chr) {
+  if (chr == XD_ASCII_NUL) {
+    return;
+  }
   // shift all the characters starting from the cursor by one to the right
   for (int i = xd_input_length; i > xd_input_cursor; i--) {
     xd_input_buffer[i] = xd_input_buffer[i - 1];
@@ -573,6 +618,21 @@ static void xd_input_buffer_insert(char chr) {
   xd_input_buffer[xd_input_cursor++] = chr;
   xd_input_buffer[++xd_input_length] = XD_ASCII_NUL;
 }  // xd_input_buffer_insert()
+
+/**
+ * @brief Inserts the characters of the passed string into the input buffer at
+ * the cursor position.
+ *
+ * @param str The string to be inserted.
+ */
+static void xd_input_buffer_insert_string(const char *str) {
+  if (str == NULL || str[0] == XD_ASCII_NUL) {
+    return;
+  }
+  for (int i = 0; str[i] != XD_ASCII_NUL; i++) {
+    xd_input_buffer_insert(str[i]);
+  }
+}  // xd_input_buffer_insert_string()
 
 /**
  * @brief Removes a number of characters before the cursor from the input
@@ -1153,6 +1213,56 @@ static void xd_input_handle_ctrl_u() {
 }  // xd_input_handle_ctrl_u()
 
 /**
+ * @brief Handles the case where the input is the `Tab` key.
+ */
+static void xd_input_handle_tab() {
+  if (xd_readline_completions_generator == NULL) {
+    // completions generator function not set, `Tab` completion won't work
+    return;
+  }
+
+  // get the current word
+  int idx = xd_input_cursor;
+  while (idx > 0 &&
+         strchr(XD_RL_TAB_COMP_DELIMITERS, xd_input_buffer[idx - 1]) == NULL) {
+    idx--;
+  }
+  int word_length = xd_input_cursor - idx;
+
+  // generate possible completions
+  char **completions =
+      xd_readline_completions_generator(xd_input_buffer, idx, xd_input_cursor);
+  if (completions == NULL) {
+    return;
+  }
+
+  if (completions[0] != NULL && completions[1] == NULL) {
+    // single match, replace the word with the match
+    xd_input_buffer_insert_string(completions[0] + word_length);
+    if (xd_input_buffer[xd_input_cursor - 1] != '/') {
+      // add space if it is not a directory
+      xd_input_buffer_insert(' ');
+    }
+  }
+  else {
+    // multiple matches, replace the word with the longest common prefix
+    char *lcp = xd_util_longest_common_prefix((const char **)completions);
+    if (lcp != NULL) {
+      xd_input_buffer_insert_string(lcp + word_length);
+      free(lcp);
+    }
+    xd_tty_bell();
+  }
+
+  // free the array of completions
+  for (int i = 0; completions[i] != NULL; i++) {
+    free(completions[i]);
+  }
+  free((void *)completions);
+  xd_readline_redraw = 1;
+}  // xd_input_handle_tab()
+
+/**
  * @brief Handles the case where the input is the`Backspace` key.
  */
 static void xd_input_handle_backspace() {
@@ -1463,6 +1573,9 @@ static void xd_input_handle_control(char chr) {
       break;
     case XD_ASCII_BS:
       xd_input_handle_ctrl_h();
+      break;
+    case XD_ASCII_HT:
+      xd_input_handle_tab();
       break;
     case XD_ASCII_LF:
       xd_input_handle_enter();

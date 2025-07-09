@@ -22,6 +22,49 @@
 #define XD_HISTORY_MAX (4)
 
 /**
+ * @brief Characters which define the start of the word to be completed when
+ * `Tab` key is pressed.
+ *
+ * The word to be completed will start after one of these characters.
+ */
+#define XD_RL_TAB_COMP_DELIMITERS "'\"`!*?[]{}()<>~#$`:=;&|@\%^\\ "
+
+/**
+ * @brief Function type for the function responsible for generating all possible
+ * completions when pressing `Tab`.
+ *
+ * @param line The whole line being read.
+ * @param start Start position of the partial text to be completed within the
+ * line.
+ * @param end End position of the partial text to be completed within the line.
+ *
+ * @return A newly-allocated, sorted, and null-terminated string array of
+ * possible completions.
+ */
+typedef char **(*xd_readline_completion_gen_func_t)(const char *line, int start,
+                                                    int end);
+
+/**
+ * @brief Pointer to the function used for generating all possible completions
+ * when pressing `Tab`, if not set then `Tab` completion won't work.
+ *
+ * Example: generating `"bl"` completions returns `["black.txt", "blue.txt",
+ * NULL]`
+ *
+ * @warning This function will be called within `xd_readline()` where the
+ * terminal settings are changed, don't read/write to `stdout` or `stdin` within
+ * this function or you will break `xd_readline()`'s correct functionality.
+ *
+ * @note This function must return a newly allocated null-terminated and sorted
+ * array of strings containing all the possible completions for the passed
+ * string.
+ *
+ * @note For path completion, this function must return all possible path
+ * completions with the directory completions having '/' at their end.
+ */
+extern xd_readline_completion_gen_func_t xd_readline_completions_generator;
+
+/**
  * @brief Prompt string displayed at the beginning of each input line.
  *
  * Used to change the prompt displayed by `xd_readline()` before reading input.
