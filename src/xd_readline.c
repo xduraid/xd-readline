@@ -176,6 +176,8 @@ typedef enum xd_readline_mode_t {
 // ========================
 
 static char *xd_util_longest_common_prefix(const char **strings);
+static void xd_util_print_completions(char **completions);
+static const char *xd_util_base_name_keep_trailing_slash(const char *path);
 
 static void xd_readline_init() __attribute__((constructor));
 static void xd_readline_destroy() __attribute__((destructor));
@@ -303,6 +305,11 @@ static int xd_tty_cursor_col = 1;
  * input).
  */
 static int xd_tty_chars_count = 0;
+
+/**
+ * @brief The previous char read from `stdin` using `read()`.
+ */
+static char xd_readline_prev_read_char = XD_ASCII_NUL;
 
 /**
  * @brief The input buffer.
@@ -488,6 +495,84 @@ static char *xd_util_longest_common_prefix(const char **strings) {
   }
   return lcp_length == 0 ? NULL : strndup(first_str, lcp_length);
 }  // xd_util_longest_common_prefix()
+
+/**
+ * @brief Helper used to print all possible completions when the `Tab` key is
+ * pressed more than once and there is more than one completion.
+ *
+ * @param completions Sorted, null-terminated array of possible completions.
+ */
+static void xd_util_print_completions(char **completions) {
+  if (completions == NULL || *completions == NULL) {
+    return;
+  }
+  // restore original terminal settings so we can use printf
+  xd_tty_restore();
+
+  int longest_completion_length = 0;
+  int completions_count = 0;
+  for (int i = 0; completions[i] != NULL; i++) {
+    if ((int)strlen(completions[i]) > longest_completion_length) {
+      longest_completion_length = (int)strlen(completions[i]);
+    }
+    completions_count++;
+  }
+
+  // calculate the number of rows and columns
+  int col_length = longest_completion_length + 2;
+  if (col_length > xd_tty_win_width) {
+    col_length = xd_tty_win_width;
+  }
+  int col_count = xd_tty_win_width / col_length;
+  int row_count = (completions_count + col_count - 1) / col_count;
+
+  // print completions
+  printf("\n");
+  for (int row = 0; row < row_count; row++) {
+    for (int col = 0; col < col_count; col++) {
+      int idx = row + (col * row_count);
+      if (idx < completions_count) {
+        const char *basename =
+            xd_util_base_name_keep_trailing_slash(completions[idx]);
+        printf("%-*s", col_length, basename);
+      }
+    }
+    printf("\n");
+  }
+  fflush(stdout);
+
+  // change the terminal settings back to raw
+  xd_tty_raw();
+
+  // start fresh on new line
+  xd_tty_cursor_row = 1;
+  xd_tty_cursor_col = 1;
+  xd_tty_chars_count = 0;
+  xd_readline_redraw = 1;
+}  // xd_util_print_completions()
+
+/**
+ * @brief Returns a pointer to the last segment of the passed path.
+ *
+ * @param path The path to return its last segment.
+ *
+ * @return Pointer to the beginning of the last segment.
+ */
+static const char *xd_util_base_name_keep_trailing_slash(const char *path) {
+  if (path == NULL || *path == '\0') {
+    return path;
+  }
+
+  int path_length = (int)strlen(path);
+  const char *last_slash = NULL;
+  for (int i = path_length - 1; i >= 0; i--) {
+    if (path[i] == '/' && i != path_length - 1) {
+      last_slash = path + i + 1;
+      break;
+    }
+  }
+  return last_slash == NULL ? path : last_slash;
+}  // xd_util_base_name_keep_trailing_slash()
 
 /**
  * @brief Constructor, runs before main to initialize the `xd-readline`
@@ -1233,6 +1318,7 @@ static void xd_input_handle_tab() {
   char **completions =
       xd_readline_completions_generator(xd_input_buffer, idx, xd_input_cursor);
   if (completions == NULL) {
+    xd_tty_bell();
     return;
   }
 
@@ -1247,10 +1333,13 @@ static void xd_input_handle_tab() {
   else {
     // multiple matches, replace the word with the longest common prefix
     char *lcp = xd_util_longest_common_prefix((const char **)completions);
-    if (lcp != NULL) {
+    if (lcp != NULL && *(lcp + word_length) != XD_ASCII_NUL) {
       xd_input_buffer_insert_string(lcp + word_length);
-      free(lcp);
     }
+    else if (xd_readline_prev_read_char == XD_ASCII_HT) {
+      xd_util_print_completions(completions);
+    }
+    free(lcp);
     xd_tty_bell();
   }
 
@@ -1749,7 +1838,7 @@ char *xd_readline() {
 
   xd_tty_raw();
 
-  char chr;
+  char chr = XD_ASCII_NUL;
   while (!xd_readline_finished) {
     if (xd_tty_win_resized) {
       xd_tty_screen_resize();
@@ -1772,6 +1861,8 @@ char *xd_readline() {
       xd_input_buffer = ptr;
       xd_readline_return = xd_input_buffer;
     }
+
+    xd_readline_prev_read_char = chr;
 
     // read one character
     ssize_t ret = read(STDIN_FILENO, &chr, 1);
