@@ -36,37 +36,37 @@
 /**
  * @brief Size of a small buffer to be used for formatting ANSI sequences.
  */
-#define XD_SMALL_BUFFER_SIZE (32)
+#define XD_RL_SMALL_BUFFER_SIZE (32)
 
 /**
  * @brief The prompt for reverse history serach.
  */
-#define XD_REVERSE_SERACH_PROMPT "(reverse-i-search)"
+#define XD_RL_REVERSE_SERACH_PROMPT "(reverse-i-search)"
 
 /**
  * @brief The prompt for failed reverse history serach.
  */
-#define XD_REVERSE_SEARCH_PROMPT_FAILED "failed (reverse-i-search)"
+#define XD_RL_REVERSE_SEARCH_PROMPT_FAILED "failed (reverse-i-search)"
 
 /**
  * @brief The prompt for forward history serach.
  */
-#define XD_FORWARD_SERACH_PROMPT "(i-search)"
+#define XD_RL_FORWARD_SERACH_PROMPT "(i-search)"
 
 /**
  * @brief The prompt for failed forward history serach.
  */
-#define XD_FORWARD_SERACH_PROMPT_FAILED "failed (i-search)"
+#define XD_RL_FORWARD_SERACH_PROMPT_FAILED "failed (i-search)"
 
 /**
  * @brief Maximum length of history search query, including null-terminator.
  */
-#define XD_SEARCH_QUERY_MAX LINE_MAX
+#define XD_RL_SEARCH_QUERY_MAX LINE_MAX
 
 /**
  * @brief Special value indicating that history search has started.
  */
-#define XD_SEARCH_IDX_NEW (-1)
+#define XD_RL_SEARCH_IDX_NEW (-1)
 
 /**
  * @brief Special value indicating that history search index is out of bounds
@@ -74,67 +74,67 @@
  * first history entry or `Ctrl+S` is pressed for the second time when the
  * navigation index is at the last history entry).
  */
-#define XD_SEARCH_IDX_OUT_OF_BOUNDS (-2)
+#define XD_RL_SEARCH_IDX_OUT_OF_BOUNDS (-2)
 
 // ASCII control characters
 
-#define XD_ASCII_NUL (0)    // ASCII for `NUL`
-#define XD_ASCII_SOH (1)    // ASCII for `SOH` (`Ctrl+A`)
-#define XD_ASCII_STX (2)    // ASCII for `STX` (`Ctrl+B`)
-#define XD_ASCII_EOT (4)    // ASCII for `EOT` (`Ctrl+D`)
-#define XD_ASCII_ENQ (5)    // ASCII for `ENQ` (`Ctrl+E`)
-#define XD_ASCII_ACK (6)    // ASCII for `ACK` (`Ctrl+F`)
-#define XD_ASCII_BEL (7)    // ASCII for `BEL` (`Ctrl+G`)
-#define XD_ASCII_BS  (8)    // ASCII for `BS` (`Ctrl+H`)
-#define XD_ASCII_HT  (9)    // ASCII for `HT` (`Tab`)
-#define XD_ASCII_LF  (10)   // ASCII for `LF` (`Enter`)
-#define XD_ASCII_VT  (11)   // ASCII for `VT` (`Ctrl+K`)
-#define XD_ASCII_FF  (12)   // ASCII for `FF` (`Ctrl+L`)
-#define XD_ASCII_DC2 (18)   // ASCII for `DC2` (`Ctrl+R`)
-#define XD_ASCII_DC3 (19)   // ASCII for `DC3` (`Ctrl+S`)
-#define XD_ASCII_NAK (21)   // ASCII for `NAK` (`Ctrl+U`)
-#define XD_ASCII_ESC (27)   // ASCII for `ESC` (`Esc`)
-#define XD_ASCII_DEL (127)  // ASCII for `DEL` (`Backspace`)
+#define XD_RL_ASCII_NUL (0)    // ASCII for `NUL`
+#define XD_RL_ASCII_SOH (1)    // ASCII for `SOH` (`Ctrl+A`)
+#define XD_RL_ASCII_STX (2)    // ASCII for `STX` (`Ctrl+B`)
+#define XD_RL_ASCII_EOT (4)    // ASCII for `EOT` (`Ctrl+D`)
+#define XD_RL_ASCII_ENQ (5)    // ASCII for `ENQ` (`Ctrl+E`)
+#define XD_RL_ASCII_ACK (6)    // ASCII for `ACK` (`Ctrl+F`)
+#define XD_RL_ASCII_BEL (7)    // ASCII for `BEL` (`Ctrl+G`)
+#define XD_RL_ASCII_BS  (8)    // ASCII for `BS` (`Ctrl+H`)
+#define XD_RL_ASCII_HT  (9)    // ASCII for `HT` (`Tab`)
+#define XD_RL_ASCII_LF  (10)   // ASCII for `LF` (`Enter`)
+#define XD_RL_ASCII_VT  (11)   // ASCII for `VT` (`Ctrl+K`)
+#define XD_RL_ASCII_FF  (12)   // ASCII for `FF` (`Ctrl+L`)
+#define XD_RL_ASCII_DC2 (18)   // ASCII for `DC2` (`Ctrl+R`)
+#define XD_RL_ASCII_DC3 (19)   // ASCII for `DC3` (`Ctrl+S`)
+#define XD_RL_ASCII_NAK (21)   // ASCII for `NAK` (`Ctrl+U`)
+#define XD_RL_ASCII_ESC (27)   // ASCII for `ESC` (`Esc`)
+#define XD_RL_ASCII_DEL (127)  // ASCII for `DEL` (`Backspace`)
 
 // ANSI escape sequences for keyboard shortcuts
 
-#define XD_ANSI_UP_ARROW    "\033[A"  // ANSI for `Up Arrow` key
-#define XD_ANSI_DOWN_ARROW  "\033[B"  // ANSI for `Down Arrow` key
-#define XD_ANSI_RIGHT_ARROW "\033[C"  // ANSI for `Right Arrow` key
-#define XD_ANSI_LEFT_ARROW  "\033[D"  // ANSI for `Left Arrow` key
+#define XD_RL_ANSI_UP_ARROW    "\033[A"  // ANSI for `Up Arrow` key
+#define XD_RL_ANSI_DOWN_ARROW  "\033[B"  // ANSI for `Down Arrow` key
+#define XD_RL_ANSI_RIGHT_ARROW "\033[C"  // ANSI for `Right Arrow` key
+#define XD_RL_ANSI_LEFT_ARROW  "\033[D"  // ANSI for `Left Arrow` key
 
-#define XD_ANSI_PAGE_UP   "\033[5~"  // ANSI for `Page Up` key
-#define XD_ANSI_PAGE_DOWN "\033[6~"  // ANSI for `Page Down` key
-#define XD_ANSI_HOME      "\033[H"   // ANSI for `Home` key
-#define XD_ANSI_END       "\033[F"   // ANSI for `End` key
-#define XD_ANSI_DELETE    "\033[3~"  // ANSI for `Delete` key
+#define XD_RL_ANSI_PAGE_UP   "\033[5~"  // ANSI for `Page Up` key
+#define XD_RL_ANSI_PAGE_DOWN "\033[6~"  // ANSI for `Page Down` key
+#define XD_RL_ANSI_HOME      "\033[H"   // ANSI for `Home` key
+#define XD_RL_ANSI_END       "\033[F"   // ANSI for `End` key
+#define XD_RL_ANSI_DELETE    "\033[3~"  // ANSI for `Delete` key
 
-#define XD_ANSI_ALT_F "\033f"  // ANSI for `ALT+F` key binding
-#define XD_ANSI_ALT_B "\033b"  // ANSI for `ALT+B` key binding
-#define XD_ANSI_ALT_D "\033d"  // ANSI for `ALT+D` key binding
+#define XD_RL_ANSI_ALT_F "\033f"  // ANSI for `ALT+F` key
+#define XD_RL_ANSI_ALT_B "\033b"  // ANSI for `ALT+B` key
+#define XD_RL_ANSI_ALT_D "\033d"  // ANSI for `ALT+D` key
 
-#define XD_ANSI_ALT_BS "\033\177"  // ANSI for `ALT+Backspace` key binding
+#define XD_RL_ANSI_ALT_BS "\033\177"  // ANSI for `ALT+Backspace` key
 
-#define XD_ANSI_CTRL_UARROW "\033[1;5A"  // ANSI for `Ctrl+Up Arrow` binding
-#define XD_ANSI_CTRL_DARROW "\033[1;5B"  // ANSI for `Ctrl+Down Arrow` binding
-#define XD_ANSI_CTRL_RARROW "\033[1;5C"  // ANSI for `Ctrl+Right Arrow` binding
-#define XD_ANSI_CTRL_LARROW "\033[1;5D"  // ANSI for `Ctrl+Left Arrow` binding
+#define XD_RL_ANSI_CTRL_UARROW "\033[1;5A"  // ANSI for `Ctrl+Up Arrow` key
+#define XD_RL_ANSI_CTRL_DARROW "\033[1;5B"  // ANSI for `Ctrl+Down Arrow` key
+#define XD_RL_ANSI_CTRL_RARROW "\033[1;5C"  // ANSI for `Ctrl+Right Arrow` key
+#define XD_RL_ANSI_CTRL_LARROW "\033[1;5D"  // ANSI for `Ctrl+Left Arrow` key
 
-#define XD_ANSII_CTRL_PAGE_UP "\033[5;5~"  //  ANSI for `Ctrl+Page Up` binding
-#define XD_ANSII_CTRL_PAGE_DN "\033[6;5~"  //  ANSI for `Ctrl+Page Down` binding
-#define XD_ANSI_CTRL_DELETE   "\033[3;5~"  // ANSI for `Ctrl+Delete` binding
+#define XD_RL_ANSI_CTRL_PAGE_UP "\033[5;5~"  //  ANSI for `Ctrl+Page Up` key
+#define XD_RL_ANSI_CTRL_PAGE_DN "\033[6;5~"  //  ANSI for `Ctrl+Page Down` key
+#define XD_RL_ANSI_CTRL_DELETE  "\033[3;5~"  // ANSI for `Ctrl+Delete` key
 
 // ANSI sequences' formats
 
-#define XD_ANSI_CRSR_SET_COL "\033[%dG"   // ANSI for setting cursor column
-#define XD_ANSI_CRSR_MV_HOME "\033[H"     // ANSI for moving cursor to (1, 1)
-#define XD_ANSI_CRSR_MV_UP   "\033[%dA"   // ANSI for moving cursor up
-#define XD_ANSI_CRSR_MV_DN   "\033[%dB"   // ANSI for moving cursor down
-#define XD_ANSI_LINE_CLR     "\033[2K\r"  // ANSI for clearing current line
-#define XD_ANSI_SCRN_CLR     "\033[2J"    // ANSI for clearing the screen
+#define XD_RL_ANSI_CRSR_SET_COL "\033[%dG"   // ANSI for setting cursor column
+#define XD_RL_ANSI_CRSR_MV_HOME "\033[H"     // ANSI for moving cursor to (1, 1)
+#define XD_RL_ANSI_CRSR_MV_UP   "\033[%dA"   // ANSI for moving cursor up
+#define XD_RL_ANSI_CRSR_MV_DN   "\033[%dB"   // ANSI for moving cursor down
+#define XD_RL_ANSI_LINE_CLR     "\033[2K\r"  // ANSI for clearing current line
+#define XD_RL_ANSI_SCRN_CLR     "\033[2J"    // ANSI for clearing the screen
 
-#define XD_ANSI_TEXT_HIGHLIGHT "\033[30;107m"  // ANSI for text highlight
-#define XD_ANSI_TEXT_RESET     "\033[0m"       // ANSI for text restore
+#define XD_RL_ANSI_TEXT_HIGHLIGHT "\033[30;107m"  // ANSI for text highlight
+#define XD_RL_ANSI_TEXT_RESET     "\033[0m"       // ANSI for text restore
 
 // ========================
 // Typedefs
@@ -309,7 +309,7 @@ static int xd_tty_chars_count = 0;
 /**
  * @brief The previous char read from `stdin` using `read()`.
  */
-static char xd_readline_prev_read_char = XD_ASCII_NUL;
+static char xd_readline_prev_read_char = XD_RL_ASCII_NUL;
 
 /**
  * @brief The input buffer.
@@ -360,7 +360,7 @@ static xd_history_entry_t **xd_history = NULL;
 /**
  * @brief Index of the current history entry.
  */
-static int xd_history_nav_idx = XD_HISTORY_MAX;
+static int xd_history_nav_idx = XD_RL_HISTORY_MAX;
 
 /**
  * @brief Index of the first history entry.
@@ -370,7 +370,7 @@ static int xd_history_start_idx = 0;
 /**
  * @brief Index of the last history entry.
  */
-static int xd_history_end_idx = XD_HISTORY_MAX - 1;
+static int xd_history_end_idx = XD_RL_HISTORY_MAX - 1;
 
 /**
  * @brief The number of entries currently stored in history.
@@ -400,7 +400,7 @@ static int xd_search_query_length = 0;
 /**
  * @brief History index used while searching.
  */
-static int xd_search_idx = XD_SEARCH_IDX_NEW;
+static int xd_search_idx = XD_RL_SEARCH_IDX_NEW;
 
 /**
  * @brief History navigation index before starting history search.
@@ -422,26 +422,26 @@ static int xd_search_result_highlight_start = -1;
  * handlers.
  */
 static const xd_esc_seq_binding_t xd_esc_seq_bindings[] = {
-    {XD_ANSI_UP_ARROW,      xd_input_handle_up_arrow        },
-    {XD_ANSI_DOWN_ARROW,    xd_input_handle_down_arrow      },
-    {XD_ANSI_RIGHT_ARROW,   xd_input_handle_right_arrow     },
-    {XD_ANSI_LEFT_ARROW,    xd_input_handle_left_arrow      },
-    {XD_ANSI_PAGE_UP,       xd_input_handle_page_up         },
-    {XD_ANSI_PAGE_DOWN,     xd_input_handle_page_down       },
-    {XD_ANSI_HOME,          xd_input_handle_home            },
-    {XD_ANSI_END,           xd_input_handle_end             },
-    {XD_ANSI_DELETE,        xd_input_handle_delete          },
-    {XD_ANSI_ALT_F,         xd_input_handle_alt_f           },
-    {XD_ANSI_ALT_B,         xd_input_handle_alt_b           },
-    {XD_ANSI_ALT_D,         xd_input_handle_alt_d           },
-    {XD_ANSI_ALT_BS,        xd_input_handle_alt_backspace   },
-    {XD_ANSI_CTRL_UARROW,   xd_input_handler_ctrl_up_arrow  },
-    {XD_ANSI_CTRL_DARROW,   xd_input_handler_ctrl_down_arrow},
-    {XD_ANSI_CTRL_RARROW,   xd_input_handle_ctrl_right_arrow},
-    {XD_ANSI_CTRL_LARROW,   xd_input_handle_ctrl_left_arrow },
-    {XD_ANSII_CTRL_PAGE_UP, xd_input_handler_ctrl_page_up   },
-    {XD_ANSII_CTRL_PAGE_DN, xd_input_handler_ctrl_page_down },
-    {XD_ANSI_CTRL_DELETE,   xd_input_handle_ctrl_delete     },
+    {XD_RL_ANSI_UP_ARROW,     xd_input_handle_up_arrow        },
+    {XD_RL_ANSI_DOWN_ARROW,   xd_input_handle_down_arrow      },
+    {XD_RL_ANSI_RIGHT_ARROW,  xd_input_handle_right_arrow     },
+    {XD_RL_ANSI_LEFT_ARROW,   xd_input_handle_left_arrow      },
+    {XD_RL_ANSI_PAGE_UP,      xd_input_handle_page_up         },
+    {XD_RL_ANSI_PAGE_DOWN,    xd_input_handle_page_down       },
+    {XD_RL_ANSI_HOME,         xd_input_handle_home            },
+    {XD_RL_ANSI_END,          xd_input_handle_end             },
+    {XD_RL_ANSI_DELETE,       xd_input_handle_delete          },
+    {XD_RL_ANSI_ALT_F,        xd_input_handle_alt_f           },
+    {XD_RL_ANSI_ALT_B,        xd_input_handle_alt_b           },
+    {XD_RL_ANSI_ALT_D,        xd_input_handle_alt_d           },
+    {XD_RL_ANSI_ALT_BS,       xd_input_handle_alt_backspace   },
+    {XD_RL_ANSI_CTRL_UARROW,  xd_input_handler_ctrl_up_arrow  },
+    {XD_RL_ANSI_CTRL_DARROW,  xd_input_handler_ctrl_down_arrow},
+    {XD_RL_ANSI_CTRL_RARROW,  xd_input_handle_ctrl_right_arrow},
+    {XD_RL_ANSI_CTRL_LARROW,  xd_input_handle_ctrl_left_arrow },
+    {XD_RL_ANSI_CTRL_PAGE_UP, xd_input_handler_ctrl_page_up   },
+    {XD_RL_ANSI_CTRL_PAGE_DN, xd_input_handler_ctrl_page_down },
+    {XD_RL_ANSI_CTRL_DELETE,  xd_input_handle_ctrl_delete     },
 };
 
 /**
@@ -480,10 +480,10 @@ static char *xd_util_longest_common_prefix(const char **strings) {
   int done = 0;
   while (!done) {
     char chr = first_str[lcp_length];
-    if (chr == XD_ASCII_NUL) {
+    if (chr == XD_RL_ASCII_NUL) {
       break;
     }
-    for (int i = 1; strings[i] != XD_ASCII_NUL; i++) {
+    for (int i = 1; strings[i] != XD_RL_ASCII_NUL; i++) {
       if (strings[i][lcp_length] != chr) {
         done = 1;
         break;
@@ -602,17 +602,18 @@ static void xd_readline_init() {
     exit(EXIT_FAILURE);
   }
   xd_input_length = 0;
-  xd_input_buffer[0] = XD_ASCII_NUL;
+  xd_input_buffer[0] = XD_RL_ASCII_NUL;
 
   // initialize search query buffer
-  xd_search_query_buffer = (char *)malloc(sizeof(char) * XD_SEARCH_QUERY_MAX);
+  xd_search_query_buffer =
+      (char *)malloc(sizeof(char) * XD_RL_SEARCH_QUERY_MAX);
   if (xd_search_query_buffer == NULL) {
     fprintf(stderr, "xd_readline: failed to allocate memory: %s\n",
             strerror(errno));
     exit(EXIT_FAILURE);
   }
   xd_search_query_length = 0;
-  xd_search_query_buffer[0] = XD_ASCII_NUL;
+  xd_search_query_buffer[0] = XD_RL_ASCII_NUL;
 
   // get terminal window width
   struct winsize wsz;
@@ -642,14 +643,14 @@ static void xd_readline_destroy() {
  */
 static void xd_readline_history_init() {
   xd_history = (xd_history_entry_t **)malloc(sizeof(xd_history_entry_t *) *
-                                             (XD_HISTORY_MAX + 1));
+                                             (XD_RL_HISTORY_MAX + 1));
   if (xd_history == NULL) {
     fprintf(stderr, "xd_readline: failed to allocate memory: %s\n",
             strerror(errno));
     exit(EXIT_FAILURE);
   }
 
-  for (int i = 0; i <= XD_HISTORY_MAX; i++) {
+  for (int i = 0; i <= XD_RL_HISTORY_MAX; i++) {
     xd_history[i] = (xd_history_entry_t *)malloc(sizeof(xd_history_entry_t));
     if (xd_history[i] == NULL) {
       fprintf(stderr, "xd_readline: failed to allocate memory: %s\n",
@@ -667,7 +668,7 @@ static void xd_readline_history_init() {
               strerror(errno));
       exit(EXIT_FAILURE);
     }
-    xd_history[i]->str[0] = XD_ASCII_NUL;
+    xd_history[i]->str[0] = XD_RL_ASCII_NUL;
   }
 }  // xd_readline_history_init()
 
@@ -675,7 +676,7 @@ static void xd_readline_history_init() {
  * @brief Frees the resources used for the history.
  */
 static void xd_readline_history_destroy() {
-  for (int i = 0; i <= XD_HISTORY_MAX; i++) {
+  for (int i = 0; i <= XD_RL_HISTORY_MAX; i++) {
     if (xd_history[i] == NULL) {
       break;
     }
@@ -692,7 +693,7 @@ static void xd_readline_history_destroy() {
  * @param chr The character to be inserted.
  */
 static void xd_input_buffer_insert(char chr) {
-  if (chr == XD_ASCII_NUL) {
+  if (chr == XD_RL_ASCII_NUL) {
     return;
   }
   // shift all the characters starting from the cursor by one to the right
@@ -701,7 +702,7 @@ static void xd_input_buffer_insert(char chr) {
   }
   // insert the new character
   xd_input_buffer[xd_input_cursor++] = chr;
-  xd_input_buffer[++xd_input_length] = XD_ASCII_NUL;
+  xd_input_buffer[++xd_input_length] = XD_RL_ASCII_NUL;
 }  // xd_input_buffer_insert()
 
 /**
@@ -711,10 +712,10 @@ static void xd_input_buffer_insert(char chr) {
  * @param str The string to be inserted.
  */
 static void xd_input_buffer_insert_string(const char *str) {
-  if (str == NULL || str[0] == XD_ASCII_NUL) {
+  if (str == NULL || str[0] == XD_RL_ASCII_NUL) {
     return;
   }
-  for (int i = 0; str[i] != XD_ASCII_NUL; i++) {
+  for (int i = 0; str[i] != XD_RL_ASCII_NUL; i++) {
     xd_input_buffer_insert(str[i]);
   }
 }  // xd_input_buffer_insert_string()
@@ -736,7 +737,7 @@ static void xd_input_buffer_remove_before_cursor(int n) {
   }
   xd_input_cursor -= n;
   xd_input_length -= n;
-  xd_input_buffer[xd_input_length] = XD_ASCII_NUL;
+  xd_input_buffer[xd_input_length] = XD_RL_ASCII_NUL;
 }  // xd_input_buffer_remove_before_cursor()
 
 /**
@@ -755,7 +756,7 @@ static void xd_input_buffer_remove_from_cursor(int n) {
     xd_input_buffer[i] = xd_input_buffer[i + n];
   }
   xd_input_length -= n;
-  xd_input_buffer[xd_input_length] = XD_ASCII_NUL;
+  xd_input_buffer[xd_input_length] = XD_RL_ASCII_NUL;
 }  // xd_input_buffer_remove_from_cursor()
 
 /**
@@ -820,7 +821,7 @@ static void xd_input_buffer_save_to_history() {
   }
 
   memcpy(history_entry->str, xd_input_buffer, xd_input_length);
-  history_entry->str[xd_input_length] = XD_ASCII_NUL;
+  history_entry->str[xd_input_length] = XD_RL_ASCII_NUL;
   history_entry->length = xd_input_length;
 }  // xd_input_buffer_save_to_history()
 
@@ -850,7 +851,7 @@ static void xd_input_buffer_load_from_history() {
   xd_input_length = history_entry->length;
   xd_input_cursor = xd_input_length;
   memcpy(xd_input_buffer, history_entry->str, xd_input_length);
-  xd_input_buffer[xd_input_length] = XD_ASCII_NUL;
+  xd_input_buffer[xd_input_length] = XD_RL_ASCII_NUL;
 }  // xd_input_buffer_load_from_history()
 
 /**
@@ -892,7 +893,7 @@ static void xd_tty_restore() {
  * @brief Write bell character to terminal to make an alert sound.
  */
 static inline void xd_tty_bell() {
-  char chr = XD_ASCII_BEL;
+  char chr = XD_RL_ASCII_BEL;
   xd_tty_write(&chr, 1);
 }  // xd_tty_bell_sound()
 
@@ -909,10 +910,10 @@ static void xd_tty_input_clear() {
   // clear all rows one by one bottom-up
   int rows = (xd_tty_chars_count + xd_tty_win_width) / xd_tty_win_width;
   for (int i = 0; i < rows; i++) {
-    xd_tty_write_ansii_sequence(XD_ANSI_LINE_CLR);
+    xd_tty_write_ansii_sequence(XD_RL_ANSI_LINE_CLR);
     xd_tty_cursor_col = 1;
     if (i < rows - 1) {
-      xd_tty_write_ansii_sequence(XD_ANSI_CRSR_MV_UP, 1);
+      xd_tty_write_ansii_sequence(XD_RL_ANSI_CRSR_MV_UP, 1);
       xd_tty_cursor_row--;
     }
   }
@@ -942,15 +943,15 @@ static void xd_tty_input_redraw() {
       int after_hlength = xd_input_length - xd_search_result_highlight_start -
                           xd_search_query_length;
       xd_tty_write_track(xd_input_buffer, xd_search_result_highlight_start);
-      xd_tty_write_ansii_sequence(XD_ANSI_TEXT_HIGHLIGHT);
+      xd_tty_write_ansii_sequence(XD_RL_ANSI_TEXT_HIGHLIGHT);
       xd_tty_write_track(input_hstart, xd_search_query_length);
-      xd_tty_write_ansii_sequence(XD_ANSI_TEXT_RESET);
+      xd_tty_write_ansii_sequence(XD_RL_ANSI_TEXT_RESET);
       xd_tty_write_track(input_hend, after_hlength);
     }
     else {
       xd_tty_write_track(xd_input_buffer, xd_input_length);
     }
-    if (strcmp(xd_search_prompt, XD_REVERSE_SEARCH_PROMPT_FAILED) == 0) {
+    if (strcmp(xd_search_prompt, XD_RL_REVERSE_SEARCH_PROMPT_FAILED) == 0) {
       xd_tty_bell();
     }
   }
@@ -980,10 +981,10 @@ static void xd_tty_screen_resize() {
  * @param ... Variable arguments to substitute into the format string.
  */
 static void xd_tty_write_ansii_sequence(const char *format, ...) {
-  char buffer[XD_SMALL_BUFFER_SIZE] = {0};
+  char buffer[XD_RL_SMALL_BUFFER_SIZE] = {0};
   va_list args;
   va_start(args, format);
-  int length = vsnprintf(buffer, XD_SMALL_BUFFER_SIZE, format, args);
+  int length = vsnprintf(buffer, XD_RL_SMALL_BUFFER_SIZE, format, args);
   va_end(args);
   if (write(STDOUT_FILENO, buffer, length) == -1) {
     xd_tty_restore();
@@ -1037,7 +1038,7 @@ static void xd_tty_write_track(const void *data, int length) {
     char chr = ' ';
     xd_tty_write(&chr, 1);
   }
-  xd_tty_write_ansii_sequence(XD_ANSI_CRSR_SET_COL, xd_tty_cursor_col);
+  xd_tty_write_ansii_sequence(XD_RL_ANSI_CRSR_SET_COL, xd_tty_cursor_col);
 }  // xd_tty_write_track()
 
 /**
@@ -1055,11 +1056,11 @@ static inline void xd_tty_cursor_move_left_wrap(int n) {
   int new_cursor_row = (cursor_flat_pos / xd_tty_win_width) + 1;
   int new_cursor_col = (cursor_flat_pos % xd_tty_win_width) + 1;
   if (new_cursor_row != xd_tty_cursor_row) {
-    xd_tty_write_ansii_sequence(XD_ANSI_CRSR_MV_UP,
+    xd_tty_write_ansii_sequence(XD_RL_ANSI_CRSR_MV_UP,
                                 xd_tty_cursor_row - new_cursor_row);
     xd_tty_cursor_row = new_cursor_row;
   }
-  xd_tty_write_ansii_sequence(XD_ANSI_CRSR_SET_COL, new_cursor_col);
+  xd_tty_write_ansii_sequence(XD_RL_ANSI_CRSR_SET_COL, new_cursor_col);
   xd_tty_cursor_col = new_cursor_col;
 }  // xd_tty_cursor_move_left_wrap()
 
@@ -1078,11 +1079,11 @@ static inline void xd_tty_cursor_move_right_wrap(int n) {
   int new_cursor_row = (cursor_flat_pos / xd_tty_win_width) + 1;
   int new_cursor_col = (cursor_flat_pos % xd_tty_win_width) + 1;
   if (new_cursor_row != xd_tty_cursor_row) {
-    xd_tty_write_ansii_sequence(XD_ANSI_CRSR_MV_DN,
+    xd_tty_write_ansii_sequence(XD_RL_ANSI_CRSR_MV_DN,
                                 new_cursor_row - xd_tty_cursor_row);
     xd_tty_cursor_row = new_cursor_row;
   }
-  xd_tty_write_ansii_sequence(XD_ANSI_CRSR_SET_COL, new_cursor_col);
+  xd_tty_write_ansii_sequence(XD_RL_ANSI_CRSR_SET_COL, new_cursor_col);
   xd_tty_cursor_col = new_cursor_col;
 }  // xd_tty_cursor_move_right_wrap()
 
@@ -1101,10 +1102,10 @@ static void xd_input_handle_printable(char chr) {
     }
     xd_readline_redraw = 1;
   }
-  else if (xd_search_query_length < XD_SEARCH_QUERY_MAX - 1) {
+  else if (xd_search_query_length < XD_RL_SEARCH_QUERY_MAX - 1) {
     // search mode
     xd_search_query_buffer[xd_search_query_length++] = chr;
-    xd_search_query_buffer[xd_search_query_length] = XD_ASCII_NUL;
+    xd_search_query_buffer[xd_search_query_length] = XD_RL_ASCII_NUL;
     xd_search_idx = xd_history_nav_idx;  // reset search index
     xd_readline_redraw = 1;
   }
@@ -1188,7 +1189,7 @@ static void xd_input_handle_ctrl_h() {
   }
   else if (xd_search_query_length > 0) {
     // search mode
-    xd_search_query_buffer[--xd_search_query_length] = XD_ASCII_NUL;
+    xd_search_query_buffer[--xd_search_query_length] = XD_RL_ASCII_NUL;
     xd_search_idx = xd_history_nav_idx;  // reset search index
   }
   xd_readline_redraw = 1;
@@ -1210,8 +1211,8 @@ static void xd_input_handle_ctrl_k() {
  * @brief Handles the case where the input is `Ctrl+L`.
  */
 static void xd_input_handle_ctrl_l() {
-  xd_tty_write_ansii_sequence(XD_ANSI_SCRN_CLR);
-  xd_tty_write_ansii_sequence(XD_ANSI_CRSR_MV_HOME);
+  xd_tty_write_ansii_sequence(XD_RL_ANSI_SCRN_CLR);
+  xd_tty_write_ansii_sequence(XD_RL_ANSI_CRSR_MV_HOME);
   xd_tty_cursor_row = 1;
   xd_tty_cursor_col = 1;
   xd_readline_redraw = 1;
@@ -1223,13 +1224,14 @@ static void xd_input_handle_ctrl_l() {
 static void xd_input_handle_ctrl_r() {
   if (xd_readline_mode == XD_READLINE_REVERSE_SEARCH) {
     if (xd_history_nav_idx == xd_history_start_idx) {
-      xd_search_idx = XD_SEARCH_IDX_OUT_OF_BOUNDS;
+      xd_search_idx = XD_RL_SEARCH_IDX_OUT_OF_BOUNDS;
     }
-    else if (xd_search_idx == XD_HISTORY_MAX) {
+    else if (xd_search_idx == XD_RL_HISTORY_MAX) {
       xd_search_idx = xd_history_end_idx;
     }
     else {
-      xd_search_idx = (xd_search_idx - 1 + XD_HISTORY_MAX) % XD_HISTORY_MAX;
+      xd_search_idx =
+          (xd_search_idx - 1 + XD_RL_HISTORY_MAX) % XD_RL_HISTORY_MAX;
     }
     return;
   }
@@ -1239,14 +1241,14 @@ static void xd_input_handle_ctrl_r() {
     xd_search_original_nav_idx = xd_history_nav_idx;
     xd_search_original_input_cursor = xd_input_cursor;
     xd_search_query_length = 0;
-    xd_search_query_buffer[0] = XD_ASCII_NUL;
-    xd_search_idx = XD_SEARCH_IDX_NEW;
+    xd_search_query_buffer[0] = XD_RL_ASCII_NUL;
+    xd_search_idx = XD_RL_SEARCH_IDX_NEW;
   }
   else {
     // switching from forward search
     xd_search_idx = xd_history_nav_idx;
   }
-  xd_search_prompt = XD_REVERSE_SERACH_PROMPT;
+  xd_search_prompt = XD_RL_REVERSE_SERACH_PROMPT;
   xd_readline_mode = XD_READLINE_REVERSE_SEARCH;
   xd_readline_redraw = 1;
 }  // xd_input_handle_ctrl_r()
@@ -1256,14 +1258,14 @@ static void xd_input_handle_ctrl_r() {
  */
 static void xd_input_handle_ctrl_s() {
   if (xd_readline_mode == XD_READLINE_FORWARD_SEARCH) {
-    if (xd_history_nav_idx == XD_HISTORY_MAX) {
-      xd_search_idx = XD_SEARCH_IDX_OUT_OF_BOUNDS;
+    if (xd_history_nav_idx == XD_RL_HISTORY_MAX) {
+      xd_search_idx = XD_RL_SEARCH_IDX_OUT_OF_BOUNDS;
     }
     else if (xd_search_idx == xd_history_end_idx) {
-      xd_search_idx = XD_HISTORY_MAX;
+      xd_search_idx = XD_RL_HISTORY_MAX;
     }
     else {
-      xd_search_idx = (xd_search_idx + 1) % XD_HISTORY_MAX;
+      xd_search_idx = (xd_search_idx + 1) % XD_RL_HISTORY_MAX;
     }
     return;
   }
@@ -1273,14 +1275,14 @@ static void xd_input_handle_ctrl_s() {
     xd_search_original_nav_idx = xd_history_nav_idx;
     xd_search_original_input_cursor = xd_input_cursor;
     xd_search_query_length = 0;
-    xd_search_query_buffer[0] = XD_ASCII_NUL;
-    xd_search_idx = XD_SEARCH_IDX_NEW;
+    xd_search_query_buffer[0] = XD_RL_ASCII_NUL;
+    xd_search_idx = XD_RL_SEARCH_IDX_NEW;
   }
   else {
     // switching from reverse search
     xd_search_idx = xd_history_nav_idx;
   }
-  xd_search_prompt = XD_FORWARD_SERACH_PROMPT;
+  xd_search_prompt = XD_RL_FORWARD_SERACH_PROMPT;
   xd_readline_mode = XD_READLINE_FORWARD_SEARCH;
   xd_readline_redraw = 1;
 }  // xd_input_handle_ctrl_s()
@@ -1333,10 +1335,10 @@ static void xd_input_handle_tab() {
   else {
     // multiple matches, replace the word with the longest common prefix
     char *lcp = xd_util_longest_common_prefix((const char **)completions);
-    if (lcp != NULL && *(lcp + word_length) != XD_ASCII_NUL) {
+    if (lcp != NULL && *(lcp + word_length) != XD_RL_ASCII_NUL) {
       xd_input_buffer_insert_string(lcp + word_length);
     }
-    else if (xd_readline_prev_read_char == XD_ASCII_HT) {
+    else if (xd_readline_prev_read_char == XD_RL_ASCII_HT) {
       xd_util_print_completions(completions);
     }
     free(lcp);
@@ -1362,8 +1364,8 @@ static void xd_input_handle_backspace() {
  * @brief Handles the case where the input is the `Enter` key.
  */
 static void xd_input_handle_enter() {
-  xd_input_buffer[xd_input_length++] = XD_ASCII_LF;
-  xd_input_buffer[xd_input_length] = XD_ASCII_NUL;
+  xd_input_buffer[xd_input_length++] = XD_RL_ASCII_LF;
+  xd_input_buffer[xd_input_length] = XD_RL_ASCII_NUL;
   xd_readline_finished = 1;
   xd_tty_cursor_move_right_wrap(xd_input_length - xd_input_cursor - 1);
 }  // xd_input_handle_enter()
@@ -1378,12 +1380,12 @@ static void xd_input_handle_up_arrow() {
   }
 
   xd_input_buffer_save_to_history();
-  if (xd_history_nav_idx == XD_HISTORY_MAX) {
+  if (xd_history_nav_idx == XD_RL_HISTORY_MAX) {
     xd_history_nav_idx = xd_history_end_idx;
   }
   else {
     xd_history_nav_idx =
-        (xd_history_nav_idx - 1 + XD_HISTORY_MAX) % XD_HISTORY_MAX;
+        (xd_history_nav_idx - 1 + XD_RL_HISTORY_MAX) % XD_RL_HISTORY_MAX;
   }
   xd_input_buffer_load_from_history();
   xd_readline_redraw = 1;
@@ -1393,17 +1395,17 @@ static void xd_input_handle_up_arrow() {
  * @brief Handles the case where the input is the `Down Arrow` key.
  */
 static void xd_input_handle_down_arrow() {
-  if (xd_history_length == 0 || xd_history_nav_idx == XD_HISTORY_MAX) {
+  if (xd_history_length == 0 || xd_history_nav_idx == XD_RL_HISTORY_MAX) {
     xd_tty_bell();
     return;
   }
 
   xd_input_buffer_save_to_history();
   if (xd_history_nav_idx == xd_history_end_idx) {
-    xd_history_nav_idx = XD_HISTORY_MAX;
+    xd_history_nav_idx = XD_RL_HISTORY_MAX;
   }
   else {
-    xd_history_nav_idx = (xd_history_nav_idx + 1) % XD_HISTORY_MAX;
+    xd_history_nav_idx = (xd_history_nav_idx + 1) % XD_RL_HISTORY_MAX;
   }
   xd_input_buffer_load_from_history();
   xd_readline_redraw = 1;
@@ -1482,13 +1484,13 @@ static void xd_input_handler_ctrl_up_arrow() {
  * @brief Handles the case where the input is `Ctrl+Down Arrow`.
  */
 static void xd_input_handler_ctrl_down_arrow() {
-  if (xd_history_length == 0 || xd_history_nav_idx == XD_HISTORY_MAX) {
+  if (xd_history_length == 0 || xd_history_nav_idx == XD_RL_HISTORY_MAX) {
     xd_tty_bell();
     return;
   }
 
   xd_input_buffer_save_to_history();
-  xd_history_nav_idx = XD_HISTORY_MAX;
+  xd_history_nav_idx = XD_RL_HISTORY_MAX;
   xd_input_buffer_load_from_history();
   xd_readline_redraw = 1;
 }  // xd_input_handler_ctrl_down_arrow()
@@ -1586,19 +1588,19 @@ static void xd_input_handle_alt_backspace() {
 static void xd_input_handle_escape_sequence() {
   // buffer for reading the escape sequence
   int idx = 0;
-  char buffer[XD_SMALL_BUFFER_SIZE];
-  buffer[idx++] = XD_ASCII_ESC;
-  buffer[idx] = XD_ASCII_NUL;
+  char buffer[XD_RL_SMALL_BUFFER_SIZE];
+  buffer[idx++] = XD_RL_ASCII_ESC;
+  buffer[idx] = XD_RL_ASCII_NUL;
 
   // read the escape sequence chracters one by one
   char chr;
   int is_valid_prefix = 0;
-  while (idx < XD_SMALL_BUFFER_SIZE - 1) {
+  while (idx < XD_RL_SMALL_BUFFER_SIZE - 1) {
     if (read(STDIN_FILENO, &chr, 1) != 1) {
       return;
     }
     buffer[idx++] = chr;
-    buffer[idx] = XD_ASCII_NUL;
+    buffer[idx] = XD_RL_ASCII_NUL;
 
     is_valid_prefix = 0;
 
@@ -1628,11 +1630,11 @@ static void xd_input_handle_escape_sequence() {
  */
 static void xd_input_handle_control(char chr) {
   if (xd_readline_mode != XD_READLINE_NORMAL) {
-    if (chr != XD_ASCII_BS && chr != XD_ASCII_DEL && chr != XD_ASCII_DC2 &&
-        chr != XD_ASCII_DC3) {
+    if (chr != XD_RL_ASCII_BS && chr != XD_RL_ASCII_DEL &&
+        chr != XD_RL_ASCII_DC2 && chr != XD_RL_ASCII_DC3) {
       xd_readline_mode = XD_READLINE_NORMAL;
       xd_readline_redraw = 1;
-      if (chr == XD_ASCII_BEL) {
+      if (chr == XD_RL_ASCII_BEL) {
         // `Ctrl+G` restore original input before starting reverse search
         xd_history_nav_idx = xd_search_original_nav_idx;
         xd_input_buffer_load_from_history();
@@ -1642,52 +1644,52 @@ static void xd_input_handle_control(char chr) {
     }
   }
   switch (chr) {
-    case XD_ASCII_SOH:
+    case XD_RL_ASCII_SOH:
       xd_input_handle_ctrl_a();
       break;
-    case XD_ASCII_STX:
+    case XD_RL_ASCII_STX:
       xd_input_handle_ctrl_b();
       break;
-    case XD_ASCII_EOT:
+    case XD_RL_ASCII_EOT:
       xd_input_handle_ctrl_d();
       break;
-    case XD_ASCII_ENQ:
+    case XD_RL_ASCII_ENQ:
       xd_input_handle_ctrl_e();
       break;
-    case XD_ASCII_ACK:
+    case XD_RL_ASCII_ACK:
       xd_input_handle_ctrl_f();
       break;
-    case XD_ASCII_BEL:
+    case XD_RL_ASCII_BEL:
       xd_input_handle_ctrl_g();
       break;
-    case XD_ASCII_BS:
+    case XD_RL_ASCII_BS:
       xd_input_handle_ctrl_h();
       break;
-    case XD_ASCII_HT:
+    case XD_RL_ASCII_HT:
       xd_input_handle_tab();
       break;
-    case XD_ASCII_LF:
+    case XD_RL_ASCII_LF:
       xd_input_handle_enter();
       break;
-    case XD_ASCII_VT:
+    case XD_RL_ASCII_VT:
       xd_input_handle_ctrl_k();
       break;
-    case XD_ASCII_FF:
+    case XD_RL_ASCII_FF:
       xd_input_handle_ctrl_l();
       break;
-    case XD_ASCII_DC2:
+    case XD_RL_ASCII_DC2:
       xd_input_handle_ctrl_r();
       break;
-    case XD_ASCII_DC3:
+    case XD_RL_ASCII_DC3:
       xd_input_handle_ctrl_s();
       break;
-    case XD_ASCII_NAK:
+    case XD_RL_ASCII_NAK:
       xd_input_handle_ctrl_u();
       break;
-    case XD_ASCII_ESC:
+    case XD_RL_ASCII_ESC:
       xd_input_handle_escape_sequence();
       break;
-    case XD_ASCII_DEL:
+    case XD_RL_ASCII_DEL:
       xd_input_handle_backspace();
       break;
     default:
@@ -1699,14 +1701,14 @@ static void xd_input_handle_control(char chr) {
  * @brief Handles history reverse search.
  */
 static void xd_readline_history_reverse_search() {
-  if (xd_search_idx == XD_SEARCH_IDX_NEW) {
+  if (xd_search_idx == XD_RL_SEARCH_IDX_NEW) {
     xd_search_idx = xd_history_nav_idx;
     return;
   }
 
   if (xd_search_query_length == 0 ||
-      xd_search_idx == XD_SEARCH_IDX_OUT_OF_BOUNDS) {
-    xd_search_prompt = XD_REVERSE_SEARCH_PROMPT_FAILED;
+      xd_search_idx == XD_RL_SEARCH_IDX_OUT_OF_BOUNDS) {
+    xd_search_prompt = XD_RL_REVERSE_SEARCH_PROMPT_FAILED;
     xd_search_result_highlight_start = -1;
     xd_readline_redraw = 1;
     return;
@@ -1719,22 +1721,23 @@ static void xd_readline_history_reverse_search() {
     if (res != NULL || xd_search_idx == xd_history_start_idx) {
       break;
     }
-    if (xd_search_idx == XD_HISTORY_MAX) {
+    if (xd_search_idx == XD_RL_HISTORY_MAX) {
       xd_search_idx = xd_history_end_idx;
     }
     else {
-      xd_search_idx = (xd_search_idx - 1 + XD_HISTORY_MAX) % XD_HISTORY_MAX;
+      xd_search_idx =
+          (xd_search_idx - 1 + XD_RL_HISTORY_MAX) % XD_RL_HISTORY_MAX;
     }
   }
 
   if (res == NULL) {
-    xd_search_prompt = XD_REVERSE_SEARCH_PROMPT_FAILED;
+    xd_search_prompt = XD_RL_REVERSE_SEARCH_PROMPT_FAILED;
     xd_search_result_highlight_start = -1;
   }
   else {
     xd_history_nav_idx = xd_search_idx;
     xd_input_buffer_load_from_history();
-    xd_search_prompt = XD_REVERSE_SERACH_PROMPT;
+    xd_search_prompt = XD_RL_REVERSE_SERACH_PROMPT;
     xd_input_cursor = (int)(res - xd_history[xd_search_idx]->str);
     xd_search_result_highlight_start = xd_input_cursor;
   }
@@ -1745,14 +1748,14 @@ static void xd_readline_history_reverse_search() {
  * @brief Handles history reverse search.
  */
 static void xd_readline_history_forward_search() {
-  if (xd_search_idx == XD_SEARCH_IDX_NEW) {
+  if (xd_search_idx == XD_RL_SEARCH_IDX_NEW) {
     xd_search_idx = xd_history_nav_idx;
     return;
   }
 
   if (xd_search_query_length == 0 ||
-      xd_search_idx == XD_SEARCH_IDX_OUT_OF_BOUNDS) {
-    xd_search_prompt = XD_FORWARD_SERACH_PROMPT_FAILED;
+      xd_search_idx == XD_RL_SEARCH_IDX_OUT_OF_BOUNDS) {
+    xd_search_prompt = XD_RL_FORWARD_SERACH_PROMPT_FAILED;
     xd_search_result_highlight_start = -1;
     xd_readline_redraw = 1;
     return;
@@ -1762,25 +1765,25 @@ static void xd_readline_history_forward_search() {
   const char *res = NULL;
   for (int i = 0; i < max_iterations; i++) {
     res = strstr(xd_history[xd_search_idx]->str, xd_search_query_buffer);
-    if (res != NULL || xd_search_idx == XD_HISTORY_MAX) {
+    if (res != NULL || xd_search_idx == XD_RL_HISTORY_MAX) {
       break;
     }
     if (xd_search_idx == xd_history_end_idx) {
-      xd_search_idx = XD_HISTORY_MAX;
+      xd_search_idx = XD_RL_HISTORY_MAX;
     }
     else {
-      xd_search_idx = (xd_search_idx + 1) % XD_HISTORY_MAX;
+      xd_search_idx = (xd_search_idx + 1) % XD_RL_HISTORY_MAX;
     }
   }
 
   if (res == NULL) {
-    xd_search_prompt = XD_FORWARD_SERACH_PROMPT_FAILED;
+    xd_search_prompt = XD_RL_FORWARD_SERACH_PROMPT_FAILED;
     xd_search_result_highlight_start = -1;
   }
   else {
     xd_history_nav_idx = xd_search_idx;
     xd_input_buffer_load_from_history();
-    xd_search_prompt = XD_FORWARD_SERACH_PROMPT;
+    xd_search_prompt = XD_RL_FORWARD_SERACH_PROMPT;
     xd_input_cursor = (int)(res - xd_history[xd_search_idx]->str);
     xd_search_result_highlight_start = xd_input_cursor;
   }
@@ -1824,7 +1827,7 @@ char *xd_readline() {
 
   xd_input_cursor = 0;
   xd_input_length = 0;
-  xd_input_buffer[0] = XD_ASCII_NUL;
+  xd_input_buffer[0] = XD_RL_ASCII_NUL;
 
   xd_readline_redraw = 1;
   xd_readline_return = xd_input_buffer;
@@ -1834,11 +1837,11 @@ char *xd_readline() {
   xd_tty_cursor_col = 1;
   xd_tty_chars_count = 0;
 
-  xd_history_nav_idx = XD_HISTORY_MAX;
+  xd_history_nav_idx = XD_RL_HISTORY_MAX;
 
   xd_tty_raw();
 
-  char chr = XD_ASCII_NUL;
+  char chr = XD_RL_ASCII_NUL;
   while (!xd_readline_finished) {
     if (xd_tty_win_resized) {
       xd_tty_screen_resize();
@@ -1891,7 +1894,7 @@ char *xd_readline() {
   }
 
   if (xd_tty_cursor_col != 1) {
-    chr = XD_ASCII_LF;
+    chr = XD_RL_ASCII_LF;
     xd_tty_write(&chr, 1);
   }
 
@@ -1900,13 +1903,13 @@ char *xd_readline() {
 }  // xd_readline()
 
 void xd_readline_history_clear() {
-  for (int i = 0; i <= XD_HISTORY_MAX; i++) {
+  for (int i = 0; i <= XD_RL_HISTORY_MAX; i++) {
     xd_history[i]->length = 0;
-    xd_history[i]->str[0] = XD_ASCII_NUL;
+    xd_history[i]->str[0] = XD_RL_ASCII_NUL;
   }
-  xd_history_nav_idx = XD_HISTORY_MAX;
+  xd_history_nav_idx = XD_RL_HISTORY_MAX;
   xd_history_start_idx = 0;
-  xd_history_end_idx = XD_HISTORY_MAX - 1;
+  xd_history_end_idx = XD_RL_HISTORY_MAX - 1;
   xd_history_length = 0;
 }  // xd_readline_history_clear()
 
@@ -1917,11 +1920,11 @@ int xd_readline_history_add(const char *str) {
 
   // ignore the trailing newline at the end
   int str_length = (int)strlen(str);
-  if (str_length > 0 && str[str_length - 1] == XD_ASCII_LF) {
+  if (str_length > 0 && str[str_length - 1] == XD_RL_ASCII_LF) {
     str_length--;
   }
 
-  int new_end_idx = (xd_history_end_idx + 1) % XD_HISTORY_MAX;
+  int new_end_idx = (xd_history_end_idx + 1) % XD_RL_HISTORY_MAX;
   xd_history_entry_t *history_entry = xd_history[new_end_idx];
 
   // resize the history entry string if needed
@@ -1943,16 +1946,16 @@ int xd_readline_history_add(const char *str) {
   }
 
   // add to history
-  if (xd_history_length < XD_HISTORY_MAX) {
+  if (xd_history_length < XD_RL_HISTORY_MAX) {
     xd_history_length++;
   }
   else {
     // circular buffer is full, overwrite the oldest entry
-    xd_history_start_idx = (xd_history_start_idx + 1) % XD_HISTORY_MAX;
+    xd_history_start_idx = (xd_history_start_idx + 1) % XD_RL_HISTORY_MAX;
   }
   xd_history_end_idx = new_end_idx;
   memcpy(history_entry->str, str, str_length);
-  history_entry->str[str_length] = XD_ASCII_NUL;
+  history_entry->str[str_length] = XD_RL_ASCII_NUL;
   history_entry->length = str_length;
 
   return 0;
@@ -1965,11 +1968,11 @@ char *xd_readline_history_get(int n) {
 
   int idx = 0;
   if (n > 0) {
-    idx = (xd_history_start_idx + n - 1) % XD_HISTORY_MAX;
+    idx = (xd_history_start_idx + n - 1) % XD_RL_HISTORY_MAX;
   }
   else {
     n = -n;
-    idx = (xd_history_end_idx - n + 1 + XD_HISTORY_MAX) % XD_HISTORY_MAX;
+    idx = (xd_history_end_idx - n + 1 + XD_RL_HISTORY_MAX) % XD_RL_HISTORY_MAX;
   }
 
   if (n > xd_history_length) {
@@ -1988,7 +1991,7 @@ void xd_readline_history_print() {
   int idx = xd_history_start_idx;
   for (int i = 0; i < xd_history_length; i++) {
     printf("    %d  %s\n", i + 1, xd_history[idx]->str);
-    idx = (idx + 1) % XD_HISTORY_MAX;
+    idx = (idx + 1) % XD_RL_HISTORY_MAX;
   }
 }  // xd_readline_history_print()
 
@@ -2001,7 +2004,7 @@ int xd_readline_history_save_to_file(const char *path, int append) {
   int idx = xd_history_start_idx;
   for (int i = 0; i < xd_history_length; i++) {
     fprintf(file, "%s\n", xd_history[idx]->str);
-    idx = (idx + 1) % XD_HISTORY_MAX;
+    idx = (idx + 1) % XD_RL_HISTORY_MAX;
   }
   fclose(file);
   return 0;
