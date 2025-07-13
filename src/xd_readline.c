@@ -1123,6 +1123,9 @@ static inline void xd_tty_cursor_move_right_wrap(int n) {
 /**
  * @brief Handles the case where the input is a printable character.
  *
+ * Adds the character to the input at the cursor position, or if in history
+ * search mode, adds it to the end of the search query.
+ *
  * @param chr the input character.
  */
 static void xd_input_handle_printable(char chr) {
@@ -1146,6 +1149,8 @@ static void xd_input_handle_printable(char chr) {
 
 /**
  * @brief Handles the case where the input is `Ctrl+A`.
+ *
+ * Moves the cursor to the beginning of the input.
  */
 static void xd_input_handle_ctrl_a() {
   if (xd_input_cursor == 0) {
@@ -1157,6 +1162,8 @@ static void xd_input_handle_ctrl_a() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+B`.
+ *
+ * Moves the cursor backward by one character.
  */
 static void xd_input_handle_ctrl_b() {
   if (xd_input_cursor == 0) {
@@ -1169,6 +1176,9 @@ static void xd_input_handle_ctrl_b() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+D`.
+ *
+ * Removes the character at the cursor position, or if the input is empty it
+ * emulates `EOF` by making `xd_readline()` stop reading and return `NULL`.
  */
 static void xd_input_handle_ctrl_d() {
   if (xd_input_length == 0) {
@@ -1181,6 +1191,8 @@ static void xd_input_handle_ctrl_d() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+E`.
+ *
+ * Moves the cursor to the end of the input.
  */
 static void xd_input_handle_ctrl_e() {
   if (xd_input_cursor == xd_input_length) {
@@ -1192,6 +1204,8 @@ static void xd_input_handle_ctrl_e() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+F`.
+ *
+ * Moves the cursor forward by one character.
  */
 static void xd_input_handle_ctrl_f() {
   if (xd_input_cursor == xd_input_length) {
@@ -1204,6 +1218,8 @@ static void xd_input_handle_ctrl_f() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+G`.
+ *
+ * Makes a terminal bell sound.
  */
 static void xd_input_handle_ctrl_g() {
   xd_tty_bell();
@@ -1211,6 +1227,9 @@ static void xd_input_handle_ctrl_g() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+H`.
+ *
+ * Removes one character before the cursor from the input, or from the search
+ * query if in forward/reverse history search mode.
  */
 static void xd_input_handle_ctrl_h() {
   if (xd_readline_mode == XD_READLINE_NORMAL) {
@@ -1230,6 +1249,8 @@ static void xd_input_handle_ctrl_h() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+K`.
+ *
+ * Removes all characters from the cursor to the end of input.
  */
 static void xd_input_handle_ctrl_k() {
   if (xd_input_cursor == xd_input_length) {
@@ -1242,6 +1263,8 @@ static void xd_input_handle_ctrl_k() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+L`.
+ *
+ * Clears the screen.
  */
 static void xd_input_handle_ctrl_l() {
   xd_tty_write_ansii_sequence(XD_RL_ANSI_SCRN_CLR);
@@ -1253,6 +1276,10 @@ static void xd_input_handle_ctrl_l() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+R`.
+ *
+ * Starts history reverse search mode. If already in reverse search, it moves
+ * the search index forward by one in order to look for the next match when
+ * `xd_readline_history_reverse_search()` is called next.
  */
 static void xd_input_handle_ctrl_r() {
   if (xd_readline_mode == XD_READLINE_REVERSE_SEARCH) {
@@ -1287,7 +1314,11 @@ static void xd_input_handle_ctrl_r() {
 }  // xd_input_handle_ctrl_r()
 
 /**
- * @brief Handles the case where the input is `Ctrl+R`.
+ * @brief Handles the case where the input is `Ctrl+S`.
+ *
+ * Starts history forward search mode. If already in forward search, it moves
+ * the search index forward by one in order to look for the next match when
+ * `xd_readline_history_forward_search()` is called next.
  */
 static void xd_input_handle_ctrl_s() {
   if (xd_readline_mode == XD_READLINE_FORWARD_SEARCH) {
@@ -1322,6 +1353,8 @@ static void xd_input_handle_ctrl_s() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+L`.
+ *
+ * Removes all characters from the beginning of input to before the cursor.
  */
 static void xd_input_handle_ctrl_u() {
   if (xd_input_cursor == 0) {
@@ -1334,6 +1367,9 @@ static void xd_input_handle_ctrl_u() {
 
 /**
  * @brief Handles the case where the input is the `Tab` key.
+ *
+ * Attempts to complete the word being written, or if pressed twice in a row it
+ * prints all possible completions.
  */
 static void xd_input_handle_tab() {
   if (xd_readline_completions_generator == NULL) {
@@ -1388,6 +1424,9 @@ static void xd_input_handle_tab() {
 
 /**
  * @brief Handles the case where the input is the`Backspace` key.
+ *
+ * Removes one character before the cursor from the input, or from the search
+ * query if in forward/reverse history search mode.
  */
 static void xd_input_handle_backspace() {
   xd_input_handle_ctrl_h();
@@ -1395,6 +1434,9 @@ static void xd_input_handle_backspace() {
 
 /**
  * @brief Handles the case where the input is the `Enter` key.
+ *
+ * Finalizes the input line by adding new-line character to the end of the input
+ * buffer, and  making `xd_readline()` stop reading and return the read line.
  */
 static void xd_input_handle_enter() {
   xd_input_buffer[xd_input_length++] = XD_RL_ASCII_LF;
@@ -1405,6 +1447,8 @@ static void xd_input_handle_enter() {
 
 /**
  * @brief Handles the case where the input is the `Up Arrow` key.
+ *
+ * Moves backward in history by one.
  */
 static void xd_input_handle_up_arrow() {
   if (xd_history_length == 0 || xd_history_nav_idx == xd_history_start_idx) {
@@ -1426,6 +1470,8 @@ static void xd_input_handle_up_arrow() {
 
 /**
  * @brief Handles the case where the input is the `Down Arrow` key.
+ *
+ * Moves forward in history by one.
  */
 static void xd_input_handle_down_arrow() {
   if (xd_history_length == 0 || xd_history_nav_idx == XD_RL_HISTORY_MAX) {
@@ -1446,6 +1492,8 @@ static void xd_input_handle_down_arrow() {
 
 /**
  * @brief Handles the case where the input is the `Right Arrow` key.
+ *
+ * Moves the cursor forward by one character.
  */
 static void xd_input_handle_right_arrow() {
   xd_input_handle_ctrl_f();
@@ -1453,6 +1501,8 @@ static void xd_input_handle_right_arrow() {
 
 /**
  * @brief Handles the case where the input is the `Left Arrow` key.
+ *
+ * Moves the cursor backward by one character.
  */
 static void xd_input_handle_left_arrow() {
   xd_input_handle_ctrl_b();
@@ -1460,6 +1510,8 @@ static void xd_input_handle_left_arrow() {
 
 /**
  * @brief Handles the case where the input is the `Page Up` key.
+ *
+ * Moves backward in history by one.
  */
 static void xd_input_handle_page_up() {
   xd_input_handle_up_arrow();
@@ -1467,6 +1519,8 @@ static void xd_input_handle_page_up() {
 
 /**
  * @brief Handles the case where the input is the `Page Down` key.
+ *
+ * Moves forward in history by one.
  */
 static void xd_input_handle_page_down() {
   xd_input_handle_down_arrow();
@@ -1474,6 +1528,8 @@ static void xd_input_handle_page_down() {
 
 /**
  * @brief Handles the case where the input is the `Home` key.
+ *
+ * Moves the cursor to the beginning of the input.
  */
 static void xd_input_handle_home() {
   xd_input_handle_ctrl_a();
@@ -1481,6 +1537,8 @@ static void xd_input_handle_home() {
 
 /**
  * @brief Handles the case where the input is the `End` key.
+ *
+ * Moves the cursor to the end of the input.
  */
 static void xd_input_handle_end() {
   xd_input_handle_ctrl_e();
@@ -1488,6 +1546,8 @@ static void xd_input_handle_end() {
 
 /**
  * @brief Handles the case where the input is the `Delete` key.
+ *
+ * Removes the character at the cursor position.
  */
 static void xd_input_handle_delete() {
   if (xd_input_cursor == xd_input_length) {
@@ -1500,6 +1560,8 @@ static void xd_input_handle_delete() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+Up Arrow`.
+ *
+ * Moves in history to the first entry.
  */
 static void xd_input_handler_ctrl_up_arrow() {
   if (xd_history_length == 0 || xd_history_nav_idx == xd_history_start_idx) {
@@ -1515,6 +1577,8 @@ static void xd_input_handler_ctrl_up_arrow() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+Down Arrow`.
+ *
+ * Moves in history to the last entry.
  */
 static void xd_input_handler_ctrl_down_arrow() {
   if (xd_history_length == 0 || xd_history_nav_idx == XD_RL_HISTORY_MAX) {
@@ -1530,6 +1594,8 @@ static void xd_input_handler_ctrl_down_arrow() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+Right Arrow`.
+ *
+ * Moves the cursor forward by one word.
  */
 static void xd_input_handle_ctrl_right_arrow() {
   xd_input_handle_alt_f();
@@ -1537,6 +1603,8 @@ static void xd_input_handle_ctrl_right_arrow() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+Left Arrow`.
+ *
+ * Moves the cursor backward by one word.
  */
 static void xd_input_handle_ctrl_left_arrow() {
   xd_input_handle_alt_b();
@@ -1544,6 +1612,8 @@ static void xd_input_handle_ctrl_left_arrow() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+Page Up`.
+ *
+ * Moves in history to the first entry.
  */
 static void xd_input_handler_ctrl_page_up() {
   xd_input_handler_ctrl_up_arrow();
@@ -1551,6 +1621,8 @@ static void xd_input_handler_ctrl_page_up() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+Page Down`.
+ *
+ * Moves in history to the last entry (current input).
  */
 static void xd_input_handler_ctrl_page_down() {
   xd_input_handler_ctrl_down_arrow();
@@ -1558,6 +1630,8 @@ static void xd_input_handler_ctrl_page_down() {
 
 /**
  * @brief Handles the case where the input is `Ctrl+Delete`.
+ *
+ * Removes from the cursor position to the end of the word.
  */
 static void xd_input_handle_ctrl_delete() {
   xd_input_handle_alt_d();
@@ -1565,6 +1639,8 @@ static void xd_input_handle_ctrl_delete() {
 
 /**
  * @brief Handles the case where the input is `Alt+F`.
+ *
+ * Moves the cursor forward by one word.
  */
 static void xd_input_handle_alt_f() {
   if (xd_input_cursor == xd_input_length) {
@@ -1578,6 +1654,8 @@ static void xd_input_handle_alt_f() {
 
 /**
  * @brief Handles the case where the input is `Alt+B`.
+ *
+ * Moves the cursor backward by one word.
  */
 static void xd_input_handle_alt_b() {
   if (xd_input_cursor == 0) {
@@ -1591,6 +1669,8 @@ static void xd_input_handle_alt_b() {
 
 /**
  * @brief Handles the case where the input is `Alt+D`.
+ *
+ * Removes from the cursor position to the end of the word.
  */
 static void xd_input_handle_alt_d() {
   if (xd_input_cursor == xd_input_length) {
@@ -1604,6 +1684,8 @@ static void xd_input_handle_alt_d() {
 
 /**
  * @brief Handles the case where the input is `Alt+Backspace`.
+ *
+ * Removes from before the cursor position to the beginning of the word.
  */
 static void xd_input_handle_alt_backspace() {
   if (xd_input_cursor == 0) {
@@ -1617,6 +1699,8 @@ static void xd_input_handle_alt_backspace() {
 
 /**
  * @brief Handles the case where the input is an escape sequence.
+ *
+ * Reads the ANSI escape sequence and calls the correct input handler function.
  */
 static void xd_input_handle_escape_sequence() {
   // buffer for reading the escape sequence
