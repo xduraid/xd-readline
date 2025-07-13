@@ -115,7 +115,7 @@ void xd_history_expansion(const char *line) {
 }  // history_expansion()
 
 int main() {
-  xd_readline_prompt = "xd-rl> ";
+  xd_readline_prompt = "\033[0;101mxd\033[0m-rl> ";
   xd_readline_completions_generator = xd_completions_generator;
 
   char *line = NULL;

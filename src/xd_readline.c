@@ -209,6 +209,7 @@ static void xd_tty_screen_resize();
 static void xd_tty_write_ansii_sequence(const char *format, ...);
 static void xd_tty_write(const void *data, int length);
 static void xd_tty_write_track(const void *data, int length);
+static void xd_tty_write_colored_track(const void *data, int length);
 
 static void xd_tty_cursor_move_left_wrap(int n);
 static void xd_tty_cursor_move_right_wrap(int n);
@@ -927,7 +928,7 @@ static void xd_tty_input_clear() {
 static void xd_tty_input_redraw() {
   xd_tty_input_clear();
   if (xd_readline_mode == XD_READLINE_NORMAL) {
-    xd_tty_write_track(xd_readline_prompt, xd_readline_prompt_length);
+    xd_tty_write_colored_track(xd_readline_prompt, xd_readline_prompt_length);
     xd_tty_write_track(xd_input_buffer, xd_input_length);
   }
   else {
@@ -1040,6 +1041,38 @@ static void xd_tty_write_track(const void *data, int length) {
   }
   xd_tty_write_ansii_sequence(XD_RL_ANSI_CRSR_SET_COL, xd_tty_cursor_col);
 }  // xd_tty_write_track()
+
+/**
+ * @brief Writes the passed data to the terminal. It identifies and handles ANSI
+ * color codes starting with `\033[` and ending with `m` and writes them
+ * directly to the terminal without affecting the cursor tracking logic.
+ *
+ * @param data Pointer to the data to be written.
+ * @param length The number of bytes to be written.
+ */
+static void xd_tty_write_colored_track(const void *data, int length) {
+  if (length <= 0) {
+    return;
+  }
+  const char *str = data;
+  int str_idx = 0;
+  while (str_idx < length) {
+    if (str[str_idx] == '\033') {
+      int ansii_end_idx = str_idx;
+      while (ansii_end_idx < length && str[ansii_end_idx] != 'm') {
+        ansii_end_idx++;
+      }
+      if (ansii_end_idx < length && str[ansii_end_idx] == 'm') {
+        // valid ANSI sequence, write without updating cursor
+        xd_tty_write(str + str_idx, ansii_end_idx - str_idx + 1);
+        str_idx = ansii_end_idx + 1;
+      }
+      continue;
+    }
+    xd_tty_write_track(str + str_idx, 1);
+    str_idx++;
+  }
+}  // xd_tty_write_colored_track()
 
 /**
  * @brief Moves the terminal cursor left by a specified number of columns,
@@ -1823,6 +1856,9 @@ static void xd_sigwinch_handler(int sig_num) {
 char *xd_readline() {
   if (xd_readline_prompt != NULL) {
     xd_readline_prompt_length = (int)strlen(xd_readline_prompt);
+  }
+  else {
+    xd_readline_prompt_length = 0;
   }
 
   xd_readline_mode = XD_READLINE_NORMAL;

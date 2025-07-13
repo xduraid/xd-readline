@@ -69,6 +69,9 @@ extern xd_readline_completion_gen_func_t xd_readline_completions_generator;
  *
  * Used to change the prompt displayed by `xd_readline()` before reading input.
  * If not set or `NULL`, no prompt will be displayed.
+ *
+ * Supports ANSI escape sequences for coloring, only full ANSI SGR sequences
+ * starting with `\033[` and ending with `m` are supported.
  */
 extern const char *xd_readline_prompt;
 
