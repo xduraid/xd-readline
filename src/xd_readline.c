@@ -1229,7 +1229,7 @@ static void xd_input_handle_ctrl_r() {
     else if (xd_search_idx == XD_RL_HISTORY_MAX) {
       xd_search_idx = xd_history_end_idx;
     }
-    else {
+    else if (xd_search_idx != XD_RL_SEARCH_IDX_OUT_OF_BOUNDS) {
       xd_search_idx =
           (xd_search_idx - 1 + XD_RL_HISTORY_MAX) % XD_RL_HISTORY_MAX;
     }
@@ -1264,7 +1264,7 @@ static void xd_input_handle_ctrl_s() {
     else if (xd_search_idx == xd_history_end_idx) {
       xd_search_idx = XD_RL_HISTORY_MAX;
     }
-    else {
+    else if (xd_search_idx != XD_RL_SEARCH_IDX_OUT_OF_BOUNDS) {
       xd_search_idx = (xd_search_idx + 1) % XD_RL_HISTORY_MAX;
     }
     return;
@@ -1733,6 +1733,7 @@ static void xd_readline_history_reverse_search() {
   if (res == NULL) {
     xd_search_prompt = XD_RL_REVERSE_SEARCH_PROMPT_FAILED;
     xd_search_result_highlight_start = -1;
+    xd_search_idx = XD_RL_SEARCH_IDX_OUT_OF_BOUNDS;
   }
   else {
     xd_history_nav_idx = xd_search_idx;
@@ -1779,6 +1780,7 @@ static void xd_readline_history_forward_search() {
   if (res == NULL) {
     xd_search_prompt = XD_RL_FORWARD_SERACH_PROMPT_FAILED;
     xd_search_result_highlight_start = -1;
+    xd_search_idx = XD_RL_SEARCH_IDX_OUT_OF_BOUNDS;
   }
   else {
     xd_history_nav_idx = xd_search_idx;
