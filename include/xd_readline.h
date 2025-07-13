@@ -19,7 +19,7 @@
 /**
  * @brief Maximum number of history entries.
  */
-#define XD_RL_HISTORY_MAX (4)
+#define XD_RL_HISTORY_MAX (1000)
 
 /**
  * @brief Characters which define the start of the word to be completed when
