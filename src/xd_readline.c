@@ -15,6 +15,7 @@
 
 #include "xd_readline.h"
 
+#include <asm-generic/errno-base.h>
 #include <asm-generic/ioctls.h>
 #include <bits/posix2_lim.h>
 #include <ctype.h>
@@ -540,7 +541,6 @@ static void xd_util_print_completions(char **completions) {
     }
     printf("\n");
   }
-  fflush(stdout);
 
   // change the terminal settings back to raw
   xd_tty_raw();
@@ -581,9 +581,7 @@ static const char *xd_util_base_name_keep_trailing_slash(const char *path) {
  */
 static void xd_readline_init() {
   if (!isatty(STDIN_FILENO) || !isatty(STDOUT_FILENO)) {
-    fprintf(stderr, "xd_readline only works with a tty IO\n");
-    fprintf(stderr, "exiting...\n");
-    exit(EXIT_FAILURE);
+    return;
   }
 
   // register `SIGWINCH` singal handler
@@ -630,6 +628,9 @@ static void xd_readline_init() {
  * library.
  */
 static void xd_readline_destroy() {
+  if (xd_input_buffer == NULL) {
+    return;
+  }
   xd_readline_history_destroy();
   free(xd_input_buffer);
   free(xd_search_query_buffer);
@@ -874,7 +875,10 @@ static void xd_tty_raw() {
   xd_getline_tty_attributes.c_lflag &= ~(ICANON | ECHO);
   xd_getline_tty_attributes.c_cc[VTIME] = 0;
   xd_getline_tty_attributes.c_cc[VMIN] = 1;
-  if (tcsetattr(STDIN_FILENO, TCSANOW, &xd_getline_tty_attributes) == -1) {
+  while (tcsetattr(STDIN_FILENO, TCSANOW, &xd_getline_tty_attributes) == -1) {
+    if (errno == EINTR) {
+      continue;
+    }
     fprintf(stderr, "xd_readline: failed to set tty attributes\n");
     exit(EXIT_FAILURE);
   }
@@ -884,7 +888,10 @@ static void xd_tty_raw() {
  * @brief Restore original terminal settings.
  */
 static void xd_tty_restore() {
-  if (tcsetattr(STDIN_FILENO, TCSANOW, &xd_original_tty_attributes) == -1) {
+  while (tcsetattr(STDIN_FILENO, TCSANOW, &xd_original_tty_attributes) == -1) {
+    if (errno == EINTR) {
+      continue;
+    }
     fprintf(stderr, "xd_readline: failed to reset tty attributes\n");
     exit(EXIT_FAILURE);
   }
@@ -987,12 +994,7 @@ static void xd_tty_write_ansii_sequence(const char *format, ...) {
   va_start(args, format);
   int length = vsnprintf(buffer, XD_RL_SMALL_BUFFER_SIZE, format, args);
   va_end(args);
-  if (write(STDOUT_FILENO, buffer, length) == -1) {
-    xd_tty_restore();
-    fprintf(stderr, "xd_readline: failed to write to tty: %s\n",
-            strerror(errno));
-    exit(EXIT_FAILURE);
-  }
+  write(STDOUT_FILENO, buffer, length);
 }  // xd_tty_write_ansii_sequence()
 
 /**
@@ -1005,12 +1007,7 @@ static void xd_tty_write(const void *data, int length) {
   if (length <= 0) {
     return;
   }
-  if (write(STDOUT_FILENO, data, length) == -1) {
-    xd_tty_restore();
-    fprintf(stderr, "xd_readline: failed to write to tty: %s\n",
-            strerror(errno));
-    exit(EXIT_FAILURE);
-  }
+  write(STDOUT_FILENO, data, length);
 }  // xd_tty_write()
 
 /**
@@ -1026,12 +1023,15 @@ static void xd_tty_write_track(const void *data, int length) {
     return;
   }
 
-  xd_tty_write(data, length);
-  xd_tty_chars_count += length;
+  int written = (int)write(STDOUT_FILENO, data, length);
+  if (written == -1) {
+    return;
+  }
+  xd_tty_chars_count += written;
 
   // update cursor position
   int cursor_flat_pos = ((xd_tty_cursor_row - 1) * xd_tty_win_width) +
-                        xd_tty_cursor_col + length - 1;
+                        xd_tty_cursor_col + written - 1;
   xd_tty_cursor_row = (cursor_flat_pos / xd_tty_win_width) + 1;
   xd_tty_cursor_col = (cursor_flat_pos % xd_tty_win_width) + 1;
   if (xd_tty_cursor_col == 1) {
@@ -1714,6 +1714,9 @@ static void xd_input_handle_escape_sequence() {
   int is_valid_prefix = 0;
   while (idx < XD_RL_SMALL_BUFFER_SIZE - 1) {
     if (read(STDIN_FILENO, &chr, 1) != 1) {
+      xd_tty_cursor_move_right_wrap(xd_input_length - xd_input_cursor);
+      xd_readline_finished = 1;
+      xd_readline_return = NULL;
       return;
     }
     buffer[idx++] = chr;
@@ -1938,6 +1941,11 @@ static void xd_sigwinch_handler(int sig_num) {
 // ========================
 
 char *xd_readline() {
+  if (xd_input_buffer == NULL) {
+    errno = ENOTTY;
+    return NULL;
+  }
+
   if (xd_readline_prompt != NULL) {
     xd_readline_prompt_length = (int)strlen(xd_readline_prompt);
   }
@@ -1991,15 +1999,10 @@ char *xd_readline() {
 
     // read one character
     ssize_t ret = read(STDIN_FILENO, &chr, 1);
-    if (ret == -1) {
-      xd_tty_restore();
-      fprintf(stderr, "xd_readline: failed to read from tty: %s\n",
-              strerror(errno));
-      exit(EXIT_FAILURE);
-    }
 
-    // EOF - input stream closed
-    if (ret == 0) {
+    // EOF or Error while reading
+    if (ret <= 0) {
+      xd_tty_cursor_move_right_wrap(xd_input_length - xd_input_cursor);
       xd_readline_finished = 1;
       xd_readline_return = NULL;
       continue;
