@@ -131,6 +131,8 @@
 #define XD_RL_ANSI_LINE_CLR     "\033[2K\r"  // ANSI for clearing current line
 #define XD_RL_ANSI_SCRN_CLR     "\033[2J"    // ANSI for clearing the screen
 
+#define XD_RL_ANSI_CRSR_REQ_POS "\033[6n"  // ANSI for requesting crsr position
+
 #define XD_RL_ANSI_TEXT_HIGHLIGHT "\033[30;107m"  // ANSI for text highlight
 #define XD_RL_ANSI_TEXT_RESET     "\033[0m"       // ANSI for text restore
 
@@ -196,6 +198,8 @@ static void xd_input_buffer_load_from_history();
 
 static void xd_tty_raw();
 static void xd_tty_restore();
+
+static void xd_tty_cursor_fix_initial_pos();
 
 static inline void xd_tty_bell();
 
@@ -894,6 +898,38 @@ static void xd_tty_restore() {
     exit(EXIT_FAILURE);
   }
 }  // xd_tty_restore()
+
+/**
+ * @brief Helper used to ensures the tty cursor is on a fresh new line first
+ * thing after calling `xd_readline()`.
+ */
+static void xd_tty_cursor_fix_initial_pos() {
+  xd_tty_write_ansii_sequence(XD_RL_ANSI_CRSR_REQ_POS);
+  tcdrain(STDOUT_FILENO);
+
+  char buf[XD_RL_SMALL_BUFFER_SIZE];
+  int idx = 0;
+  char chr = ' ';
+  while (idx < XD_RL_SMALL_BUFFER_SIZE - 1) {
+    ssize_t ret = read(STDIN_FILENO, &chr, 1);
+    if (ret <= 0) {
+      break;
+    }
+    buf[idx++] = chr;
+    if (chr == 'R') {
+      break;
+    }
+  }
+  buf[idx] = '\0';
+
+  int row = 1;
+  int col = 1;
+
+  if (sscanf(buf, "\033[%d;%dR", &row, &col) == 2 && col != 1) {
+    // move to new line to preserve text on the same line
+    xd_tty_write("\r\n", 2);
+  }
+}  // xd_tty_cursor_fix_initial_pos()
 
 /**
  * @brief Write bell character to terminal to make an alert sound.
@@ -1968,6 +2004,8 @@ char *xd_readline() {
   xd_history_nav_idx = XD_RL_HISTORY_MAX;
 
   xd_tty_raw();
+
+  xd_tty_cursor_fix_initial_pos();
 
   char chr = XD_RL_ASCII_NUL;
   while (!xd_readline_finished) {
