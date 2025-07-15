@@ -1991,15 +1991,10 @@ char *xd_readline() {
 
     // read one character
     ssize_t ret = read(STDIN_FILENO, &chr, 1);
-    if (ret == -1) {
-      xd_tty_restore();
-      fprintf(stderr, "xd_readline: failed to read from tty: %s\n",
-              strerror(errno));
-      exit(EXIT_FAILURE);
-    }
 
-    // EOF - input stream closed
-    if (ret == 0) {
+    // EOF or Error while reading
+    if (ret <= 0) {
+      xd_tty_cursor_move_right_wrap(xd_input_length - xd_input_cursor);
       xd_readline_finished = 1;
       xd_readline_return = NULL;
       continue;
