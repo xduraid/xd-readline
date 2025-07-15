@@ -15,9 +15,6 @@
 
 #include "xd_readline.h"
 
-#include <asm-generic/errno-base.h>
-#include <asm-generic/ioctls.h>
-#include <bits/posix2_lim.h>
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
