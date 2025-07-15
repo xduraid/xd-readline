@@ -811,7 +811,8 @@ static void xd_input_buffer_save_to_history() {
       new_capacity += LINE_MAX - (new_capacity % LINE_MAX);
     }
 
-    char *ptr = (char *)realloc(history_entry->str, new_capacity);
+    char *ptr =
+        (char *)realloc(history_entry->str, sizeof(char) * new_capacity);
     if (ptr == NULL) {
       return;  // allocation error, stop saving
     }
@@ -839,7 +840,7 @@ static void xd_input_buffer_load_from_history() {
       new_capacity += LINE_MAX - (new_capacity % LINE_MAX);
     }
 
-    char *ptr = (char *)realloc(xd_input_buffer, new_capacity);
+    char *ptr = (char *)realloc(xd_input_buffer, sizeof(char) * new_capacity);
     if (ptr == NULL) {
       return;  // allocation error, stop loading
     }
@@ -1982,8 +1983,8 @@ char *xd_readline() {
 
     // expand the input buffer
     if (xd_input_length == xd_input_capacity - 1) {
-      char *ptr =
-          realloc(xd_input_buffer, sizeof(char) * xd_input_capacity * 2);
+      char *ptr = (char *)realloc(xd_input_buffer,
+                                  sizeof(char) * xd_input_capacity * 2);
       if (ptr == NULL) {
         break;
       }
@@ -2057,7 +2058,8 @@ int xd_readline_history_add(const char *str) {
       new_capacity += LINE_MAX - (new_capacity % LINE_MAX);
     }
 
-    char *ptr = (char *)realloc(history_entry->str, new_capacity);
+    char *ptr =
+        (char *)realloc(history_entry->str, sizeof(char) * new_capacity);
     if (ptr == NULL) {
       fprintf(stderr, "xd_readline: failed to allocate memory: %s\n",
               strerror(errno));
