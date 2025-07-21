@@ -196,7 +196,7 @@ A full working example utilizing all `xd-readline` features is provided in [main
 
 ## 🧾 Notes<a name="notes"></a>
 
-* `xd-readline` is designed to work only with **terminal I/O**, both `stdin` and `stdout` must be attached to a terminal. If either is not a terminal, an error message is printed and the program will be terminated with an error exit code.
+* `xd-readline` is designed to work only with **terminal I/O**, both `stdin` and `stdout` must be attached to a terminal. If either is not a terminal, the library will not initialize correctly, and all calls to `xd_readline()` will return `NULL` with errno set to `ENOTTY`.
 
 * While large input lines are supported, some editing and cursor movement operations may behave incorrectly when the line exceeds the visible screen area (`width × height` characters).  
   This is a limitation of basic ANSI escape sequences and is intentional to preserve broad compatibility across terminal emulators.

@@ -15,6 +15,7 @@
 
 #include "xd_readline.h"
 
+#include <asm-generic/errno-base.h>
 #include <asm-generic/ioctls.h>
 #include <bits/posix2_lim.h>
 #include <ctype.h>
@@ -581,9 +582,7 @@ static const char *xd_util_base_name_keep_trailing_slash(const char *path) {
  */
 static void xd_readline_init() {
   if (!isatty(STDIN_FILENO) || !isatty(STDOUT_FILENO)) {
-    fprintf(stderr, "xd_readline only works with a tty IO\n");
-    fprintf(stderr, "exiting...\n");
-    exit(EXIT_FAILURE);
+    return;
   }
 
   // register `SIGWINCH` singal handler
@@ -630,6 +629,9 @@ static void xd_readline_init() {
  * library.
  */
 static void xd_readline_destroy() {
+  if (xd_input_buffer == NULL) {
+    return;
+  }
   xd_readline_history_destroy();
   free(xd_input_buffer);
   free(xd_search_query_buffer);
@@ -1938,6 +1940,11 @@ static void xd_sigwinch_handler(int sig_num) {
 // ========================
 
 char *xd_readline() {
+  if (xd_input_buffer == NULL) {
+    errno = ENOTTY;
+    return NULL;
+  }
+
   if (xd_readline_prompt != NULL) {
     xd_readline_prompt_length = (int)strlen(xd_readline_prompt);
   }
